@@ -1,0 +1,58 @@
+name: Test Nuitka module mode
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc python3-dev patchelf
+
+      - name: Create simple Python module
+        run: |
+          cat > mymodule.py << 'EOF'
+          def greet(name):
+              return f"Hello, {name}!"
+          EOF
+
+      - name: Build extension module with Nuitka
+        id: build
+        uses: .
+        with:
+          script-name: mymodule.py
+          nuitka-version: "2.0"
+          module: "true"
+          standalone: "false"
+          onefile: "false"
+          output-dir: build
+          disable-cache: "true"
+          show-scons: "false"
+          assume-yes-for-downloads: "true"
+
+      - name: Assert module build output exists
+        run: |
+          echo "Checking for module build output..."
+          ls -la build/ || true
+          if [ ! -d "build" ]; then
+            echo "FAIL: output directory build does not exist"
+            exit 1
+          fi
+          echo "PASS: build directory exists"
+
+      - name: Assert extension module was created
+        run: |
+          echo "Checking for .so extension module..."
+          if find build -name "mymodule*.so" -type f | grep -q .; then
+            echo "PASS: found extension module"
+            find build -name "mymodule*.so" -type f
+          else
+            echo "FAIL: no .so extension module found in build directory"
+            find build -type f || true
+            exit 1
+          fi

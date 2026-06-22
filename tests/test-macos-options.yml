@@ -1,0 +1,54 @@
+name: Test Nuitka macOS options
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc python3-dev patchelf
+
+      - name: Create simple Python script
+        run: |
+          cat > hello_macos.py << 'EOF'
+          print("Hello macOS options!")
+          EOF
+
+      - name: Build with Nuitka using macOS options
+        id: build
+        uses: .
+        with:
+          script-name: hello_macos.py
+          nuitka-version: "2.0"
+          standalone: "false"
+          onefile: "false"
+          module: "false"
+          output-dir: build
+          disable-cache: "true"
+          show-scons: "false"
+          assume-yes-for-downloads: "true"
+          macos-create-app-bundle: "false"
+          macos-app-icon: ""
+          macos-target-arch: "x86_64"
+          macos-signed-app-name: "com.TestCompany.TestApp"
+          macos-app-mode: "gui"
+          macos-sign-identity: "ad-hoc"
+          macos-sign-notarization: "false"
+          macos-app-version: "1.0"
+          macos-app-protected-resource: ""
+
+      - name: Assert build output exists
+        run: |
+          echo "Checking for build output..."
+          ls -la build/ || true
+          if [ ! -d "build" ]; then
+            echo "FAIL: output directory build does not exist"
+            exit 1
+          fi
+          echo "PASS: build directory exists"

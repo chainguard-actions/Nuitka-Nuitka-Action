@@ -1,0 +1,48 @@
+name: Test Nuitka Qt plugin options
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc python3-dev patchelf
+
+      - name: Create simple Python script
+        run: |
+          cat > hello_qt.py << 'EOF'
+          print("Hello Qt!")
+          EOF
+
+      - name: Build with Nuitka using Qt plugin options
+        id: build
+        uses: .
+        with:
+          script-name: hello_qt.py
+          nuitka-version: "2.0"
+          standalone: "false"
+          onefile: "false"
+          module: "false"
+          output-dir: build
+          disable-cache: "true"
+          show-scons: "false"
+          assume-yes-for-downloads: "true"
+          enable-plugins: "pylint-warnings"
+          include-qt-plugins: "qml"
+          noinclude-qt-plugins: "webkit"
+
+      - name: Assert build output exists
+        run: |
+          echo "Checking for build output..."
+          ls -la build/ || true
+          if [ ! -d "build" ]; then
+            echo "FAIL: output directory build does not exist"
+            exit 1
+          fi
+          echo "PASS: build directory exists"
