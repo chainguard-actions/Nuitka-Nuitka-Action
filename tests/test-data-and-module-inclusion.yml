@@ -1,0 +1,70 @@
+name: Test Nuitka data and module inclusion options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential python3-dev patchelf ccache
+
+      - name: Create Python script and data files
+        run: |
+          mkdir -p mydata
+          echo "some data" > mydata/data.txt
+
+          cat > hello_data.py << 'EOF'
+          import os
+          print("Hello from Nuitka with data inclusion!")
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          script-name: hello_data.py
+          mode: accelerated
+          output-dir: nuitka-build-data
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          nuitka-version: "main"
+          include-package-data: ""
+          include-data-files: ""
+          include-data-dir: ""
+          noinclude-data-files: ""
+          include-onefile-external-data: ""
+          include-raw-dir: ""
+          include-package: ""
+          include-module: ""
+          include-plugin-directory: ""
+          include-plugin-files: ""
+          prefer-source-code: "false"
+          nofollow-import-to: ""
+          user-package-configuration-file: ""
+          enable-plugins: ""
+          user-plugin: ""
+          plugin-no-detection: "false"
+          module-parameter: ""
+          noinclude-setuptools-mode: "warning"
+          noinclude-pytest-mode: "warning"
+          noinclude-unittest-mode: "warning"
+          noinclude-pydoc-mode: "warning"
+          noinclude-IPython-mode: "warning"
+          noinclude-dask-mode: "warning"
+          noinclude-numba-mode: "warning"
+          noinclude-default-mode: "warning"
+          noinclude-custom-mode: ""
+
+      - name: Assert build output directory exists
+        run: |
+          echo "Checking build output directory..."
+          if [ ! -d "nuitka-build-data" ]; then
+            echo "FAIL: output directory nuitka-build-data does not exist"
+            ls -la . || true
+            exit 1
+          fi
+          echo "PASS: output directory exists"
+          ls -la nuitka-build-data/ || true

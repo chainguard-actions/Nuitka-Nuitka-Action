@@ -1,0 +1,51 @@
+name: Test basic Nuitka build (accelerated mode)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential python3-dev patchelf ccache
+
+      - name: Create simple Python script to compile
+        run: |
+          cat > hello.py << 'EOF'
+          print("Hello from Nuitka!")
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          script-name: hello.py
+          mode: accelerated
+          output-dir: nuitka-build
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          nuitka-version: "main"
+
+      - name: Assert build output directory exists
+        run: |
+          echo "Checking build output directory..."
+          if [ ! -d "nuitka-build" ]; then
+            echo "FAIL: output directory nuitka-build does not exist"
+            ls -la . || true
+            exit 1
+          fi
+          echo "PASS: output directory exists"
+          ls -la nuitka-build/ || true
+
+      - name: Assert compiled binary exists
+        run: |
+          echo "Checking for compiled binary..."
+          if ! find nuitka-build -name "hello*" -type f | grep -q .; then
+            echo "FAIL: no compiled binary found in nuitka-build"
+            find nuitka-build -type f || true
+            exit 1
+          fi
+          echo "PASS: compiled binary found"
+          find nuitka-build -name "hello*" -type f

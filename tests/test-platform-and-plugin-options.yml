@@ -1,0 +1,78 @@
+name: Test Nuitka platform-specific and plugin options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential python3-dev patchelf ccache
+
+      - name: Create simple Python script to compile
+        run: |
+          cat > hello_platform.py << 'EOF'
+          print("Hello from Nuitka with platform options!")
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          script-name: hello_platform.py
+          mode: accelerated
+          output-dir: nuitka-build-platform
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          nuitka-version: "main"
+          onefile-tempdir-spec: ""
+          onefile-child-grace-time: ""
+          onefile-no-compression: "false"
+          onefile-windows-splash-screen-image: ""
+          windows-icon-from-ico: ""
+          windows-icon-from-exe: ""
+          windows-uac-admin: "false"
+          windows-uac-uiaccess: "false"
+          windows-certificate-name: ""
+          windows-certificate-sha1: ""
+          windows-certificate-filename: ""
+          windows-certificate-password: ""
+          windows-signed-content-comment: ""
+          windows-signing-tool: ""
+          windows-service-name: ""
+          windows-service-grace-time: ""
+          windows-service-start-mode: ""
+          windows-service-cli: "false"
+          macos-target-arch: ""
+          macos-app-icon: ""
+          macos-signed-app-name: ""
+          macos-app-name: ""
+          macos-app-mode: ""
+          macos-sign-identity: ""
+          macos-sign-notarization: "false"
+          macos-app-version: ""
+          macos-app-protected-resource: ""
+          linux-icon: ""
+          upx-binary: ""
+          upx-disable-cache: "false"
+          tk-library-dir: ""
+          tcl-library-dir: ""
+          include-qt-plugins: ""
+          noinclude-qt-plugins: ""
+          noinclude-qt-translations: "false"
+          include-pmw-blt: "true"
+          include-pmw-color: "true"
+          include-pickle-support-module: ""
+
+      - name: Assert build output directory exists
+        run: |
+          echo "Checking build output directory..."
+          if [ ! -d "nuitka-build-platform" ]; then
+            echo "FAIL: output directory nuitka-build-platform does not exist"
+            ls -la . || true
+            exit 1
+          fi
+          echo "PASS: output directory exists"
+          ls -la nuitka-build-platform/ || true

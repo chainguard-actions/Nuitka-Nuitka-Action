@@ -1,0 +1,61 @@
+name: Test Nuitka reporting and debug options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential python3-dev patchelf ccache
+
+      - name: Create simple Python script to compile
+        run: |
+          cat > hello_report.py << 'EOF'
+          print("Hello from Nuitka with reporting!")
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          script-name: hello_report.py
+          mode: accelerated
+          output-dir: nuitka-build-report
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          nuitka-version: "main"
+          report: "compilation-report.xml"
+          report-diffable: "true"
+          report-user-provided: "test-key=test-value"
+          report-template: ""
+          quiet: "false"
+          show-scons: "false"
+          show-memory: "false"
+          debug: "false"
+          no-debug-immortal-assumptions: "false"
+          no-debug-c-warnings: "false"
+          unstripped: "false"
+          trace-execution: "false"
+          xml: ""
+          experimental: ""
+          warn-implicit-exceptions: "false"
+          warn-unusual-code: "false"
+          nowarn-mnemonic: ""
+          python-flag: ""
+          python-debug: "false"
+          deployment: "false"
+          no-deployment-flag: ""
+
+      - name: Assert build output directory exists
+        run: |
+          echo "Checking build output directory..."
+          if [ ! -d "nuitka-build-report" ]; then
+            echo "FAIL: output directory nuitka-build-report does not exist"
+            ls -la . || true
+            exit 1
+          fi
+          echo "PASS: output directory exists"
+          ls -la nuitka-build-report/ || true
