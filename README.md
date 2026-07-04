@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v1.0 | [`v1.0`](https://github.com/chainguard-actions/Nuitka-Nuitka-Action/tree/v1.0) | [`ba934bf`](https://github.com/Nuitka/Nuitka-Action/commit/ba934bf9683cacaac3a96867b479ad7dabeabdef) |
+| v1.3 | [`v1.3`](https://github.com/chainguard-actions/Nuitka-Nuitka-Action/tree/v1.3) | [`b24f9b7`](https://github.com/Nuitka/Nuitka-Action/commit/b24f9b7859f1022afcfad039eb8b8ac3ae299e39) |
 
 ## Privacy
 
