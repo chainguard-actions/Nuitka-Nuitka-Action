@@ -1,0 +1,78 @@
+name: Test Nuitka with reporting, onefile, and console options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            gcc \
+            python3-dev \
+            python3-pip \
+            python-is-python3 \
+            patchelf \
+            git
+          python --version
+          pip --version
+
+      - name: Create simple Python script
+        run: |
+          cat > reporter.py << 'EOF'
+          print("Reporter app")
+          EOF
+
+      - name: Build with Nuitka (reporting, onefile, console, OS options)
+        id: build
+        uses: .
+        with:
+          script-name: reporter.py
+          nuitka-version: "main"
+          mode: accelerated
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          output-dir: build
+          report: ""
+          report-diffable: "false"
+          report-user-provided: ""
+          report-template: ""
+          onefile-tempdir-spec: ""
+          onefile-child-grace-time: ""
+          onefile-no-compression: "false"
+          onefile-windows-splash-screen-image: ""
+          disable-console: "false"
+          enable-console: "false"
+          windows-console-mode: ""
+          windows-icon-from-ico: ""
+          windows-icon-from-exe: ""
+          windows-uac-admin: "false"
+          windows-uac-uiaccess: "false"
+          macos-target-arch: ""
+          macos-app-icon: ""
+          macos-signed-app-name: ""
+          macos-app-name: ""
+          macos-app-mode: ""
+          macos-sign-identity: ""
+          macos-sign-notarization: "false"
+          macos-app-version: ""
+          macos-app-protected-resource: ""
+          linux-icon: ""
+          force-stdout-spec: ""
+          force-stderr-spec: ""
+          upx-binary: ""
+          upx-disable-cache: "false"
+
+      - name: Assert build output exists
+        run: |
+          echo "Checking for build output..."
+          find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
+          if find build/ -name "reporter*" -type f | grep -q .; then
+            echo "PASS: Build output found"
+          else
+            echo "FAIL: Expected build output not found in build/"
+            exit 1
+          fi

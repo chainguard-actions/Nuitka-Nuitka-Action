@@ -1,4 +1,4 @@
-name: Test Nuitka version info and compiler options
+name: Test Nuitka with version info, compiler, and debug options
 on:
   workflow_dispatch:
 jobs:
@@ -10,31 +10,39 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y build-essential python3-dev patchelf ccache
+          sudo apt-get install -y --no-install-recommends \
+            gcc \
+            python3-dev \
+            python3-pip \
+            python-is-python3 \
+            patchelf \
+            git
+          python --version
+          pip --version
 
-      - name: Create simple Python script to compile
+      - name: Create simple Python script
         run: |
-          cat > hello_version.py << 'EOF'
-          print("Hello from Nuitka with version info!")
+          cat > versioned.py << 'EOF'
+          print("Versioned app")
           EOF
 
-      - id: action
+      - name: Build with Nuitka (version info, compiler, debug options)
+        id: build
         uses: .
         with:
-          script-name: hello_version.py
+          script-name: versioned.py
+          nuitka-version: "main"
           mode: accelerated
-          output-dir: nuitka-build-version
-          output-file: hello_version_out
           disable-cache: "true"
           assume-yes-for-downloads: "true"
-          nuitka-version: "main"
-          company-name: "TestCompany"
+          output-dir: build
+          company-name: "TestCorp"
           product-name: "TestProduct"
           file-version: "1.0.0.0"
           product-version: "1.0.0.0"
-          file-description: "Test binary description"
-          copyright: "Copyright 2024 TestCompany"
-          trademarks: "TestTrademark"
+          file-description: "Test binary"
+          copyright: "Copyright 2024 TestCorp"
+          trademarks: "TestCorp TM"
           clang: "false"
           mingw64: "false"
           msvc: ""
@@ -42,20 +50,32 @@ jobs:
           lto: "auto"
           static-libpython: "auto"
           cf-protection: "auto"
-          low-memory: "true"
-          disable-console: "false"
-          enable-console: "false"
-          windows-console-mode: "force"
-          force-stdout-spec: ""
-          force-stderr-spec: ""
+          debug: "false"
+          no-debug-immortal-assumptions: "false"
+          no-debug-c-warnings: "false"
+          unstripped: "false"
+          trace-execution: "false"
+          xml: ""
+          experimental: ""
+          low-memory: "false"
+          python-flag: ""
+          python-debug: "false"
+          quiet: "false"
+          show-scons: "false"
+          show-memory: "false"
+          warn-implicit-exceptions: "false"
+          warn-unusual-code: "false"
+          nowarn-mnemonic: ""
+          deployment: "false"
+          no-deployment-flag: ""
 
-      - name: Assert build output directory exists
+      - name: Assert build output exists
         run: |
-          echo "Checking build output directory..."
-          if [ ! -d "nuitka-build-version" ]; then
-            echo "FAIL: output directory nuitka-build-version does not exist"
-            ls -la . || true
+          echo "Checking for build output..."
+          find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
+          if find build/ -name "versioned*" -type f | grep -q .; then
+            echo "PASS: Build output found"
+          else
+            echo "FAIL: Expected build output not found in build/"
             exit 1
           fi
-          echo "PASS: output directory exists"
-          ls -la nuitka-build-version/ || true

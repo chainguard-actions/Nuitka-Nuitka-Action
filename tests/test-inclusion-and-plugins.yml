@@ -1,0 +1,85 @@
+name: Test Nuitka with inclusion, data, and plugin options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            gcc \
+            python3-dev \
+            python3-pip \
+            python-is-python3 \
+            patchelf \
+            git
+          python --version
+          pip --version
+
+      - name: Create Python script and data files
+        run: |
+          mkdir -p mydata
+          echo "data content" > mydata/sample.txt
+          cat > dataapp.py << 'EOF'
+          print("Data app")
+          EOF
+
+      - name: Build with Nuitka (inclusion and plugin options)
+        id: build
+        uses: .
+        with:
+          script-name: dataapp.py
+          nuitka-version: "main"
+          mode: accelerated
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          output-dir: build
+          enable-plugins: ""
+          user-plugin: ""
+          plugin-no-detection: "false"
+          module-parameter: ""
+          include-package-data: ""
+          include-data-files: ""
+          include-data-dir: ""
+          noinclude-data-files: ""
+          include-onefile-external-data: ""
+          include-raw-dir: ""
+          include-package: ""
+          include-module: ""
+          include-plugin-directory: ""
+          include-plugin-files: ""
+          prefer-source-code: "false"
+          nofollow-import-to: ""
+          user-package-configuration-file: ""
+          noinclude-setuptools-mode: "warning"
+          noinclude-pytest-mode: "warning"
+          noinclude-unittest-mode: "warning"
+          noinclude-pydoc-mode: "warning"
+          noinclude-IPython-mode: "warning"
+          noinclude-dask-mode: "warning"
+          noinclude-numba-mode: "warning"
+          noinclude-default-mode: "warning"
+          noinclude-custom-mode: ""
+          include-pickle-support-module: ""
+          include-pmw-blt: "true"
+          include-pmw-color: "true"
+          include-qt-plugins: ""
+          noinclude-qt-plugins: ""
+          noinclude-qt-translations: "false"
+          tk-library-dir: ""
+          tcl-library-dir: ""
+
+      - name: Assert build output exists
+        run: |
+          echo "Checking for build output..."
+          find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
+          if find build/ -name "dataapp*" -type f | grep -q .; then
+            echo "PASS: Build output found"
+          else
+            echo "FAIL: Expected build output not found in build/"
+            exit 1
+          fi
