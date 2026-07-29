@@ -1,0 +1,52 @@
+name: Test working-directory input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3 python3-pip python3-dev gcc ccache
+          # Ensure 'python' and 'pip' commands exist
+          if ! command -v python &>/dev/null; then
+            sudo ln -sf /usr/bin/python3 /usr/local/bin/python
+          fi
+          if ! command -v pip &>/dev/null; then
+            sudo ln -sf /usr/bin/pip3 /usr/local/bin/pip
+          fi
+          python --version
+          pip --version
+
+      - name: Prepare working directory with script
+        run: |
+          mkdir -p tests/fixtures/workdir
+          cat > tests/fixtures/workdir/app.py << 'EOF'
+          print("Hello from working directory!")
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          working-directory: tests/fixtures/workdir
+          script-name: app.py
+          mode: accelerated
+          output-dir: build-workdir
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+
+      - name: Assert build output exists in working directory
+        run: |
+          echo "Checking build output in working directory..."
+          ls -la tests/fixtures/workdir/build-workdir/ || true
+          # Nuitka accelerated mode produces a binary named after the script
+          if ls tests/fixtures/workdir/build-workdir/app* 2>/dev/null | grep -q .; then
+            echo "PASS: build output found in working directory"
+          else
+            echo "FAIL: expected build output not found in tests/fixtures/workdir/build-workdir/"
+            ls -la tests/fixtures/workdir/build-workdir/ || echo "(directory empty or missing)"
+            exit 1
+          fi

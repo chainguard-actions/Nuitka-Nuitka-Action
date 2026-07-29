@@ -1,0 +1,48 @@
+name: Test reporting inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3 python3-pip python3-dev gcc ccache
+          if ! command -v python &>/dev/null; then
+            sudo ln -sf /usr/bin/python3 /usr/local/bin/python
+          fi
+          if ! command -v pip &>/dev/null; then
+            sudo ln -sf /usr/bin/pip3 /usr/local/bin/pip
+          fi
+          python --version
+          pip --version
+
+      - id: action
+        uses: .
+        with:
+          script-name: tests/fixtures/hello.py
+          mode: accelerated
+          output-dir: tests/fixtures/build-reporting
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          report: ""
+          report-diffable: "false"
+          report-user-provided: ""
+          report-template: ""
+          quiet: "false"
+          show-scons: "false"
+          show-memory: "false"
+
+      - name: Assert build succeeded
+        run: |
+          echo "Checking build output..."
+          if ls tests/fixtures/build-reporting/hello* 2>/dev/null | grep -q .; then
+            echo "PASS: build output found"
+          else
+            echo "FAIL: expected build output not found"
+            ls -la tests/fixtures/build-reporting/ || echo "(directory empty or missing)"
+            exit 1
+          fi
