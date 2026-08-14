@@ -1,53 +1,71 @@
-name: Test Nuitka version information inputs
+name: Test build with version information
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-version-info:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install build dependencies
+      - name: Install system dependencies for Nuitka
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y gcc python3-dev patchelf
 
-      - name: Create simple Python script
+      - name: Set up Python
         run: |
-          cat > hello_version.py << 'EOF'
-          print("Hello with version info!")
-          EOF
+          python --version
+          pip --version
 
-      - name: Build with Nuitka using version information inputs
-        id: build
+      - id: build
         uses: .
         with:
-          script-name: hello_version.py
-          nuitka-version: "2.0"
-          standalone: "false"
-          onefile: "false"
-          module: "false"
+          working-directory: tests/fixtures
+          script-name: hello.py
+          standalone: "true"
+          onefile: "true"
           output-dir: build
-          output-file: hello_version
-          disable-cache: "true"
-          show-scons: "false"
           assume-yes-for-downloads: "true"
-          company-name: "Test Company"
-          product-name: "Test Product"
+          disable-cache: "true"
+          company-name: "TestCompany"
+          product-name: "TestProduct"
           file-version: "1.0.0.0"
           product-version: "1.0.0.0"
-          file-description: "A test executable"
-          copyright: "Copyright 2024 Test Company"
-          trademarks: "Test Trademark"
+          file-description: "Test build with version info"
+          copyright: "Copyright 2024 TestCompany"
 
-      - name: Assert build output exists
+      - name: Assert binary was created with version info
         run: |
-          echo "Checking for build output..."
-          ls -la build/ || true
-          if [ ! -d "build" ]; then
-            echo "FAIL: output directory build does not exist"
+          echo "Checking for built binary..."
+          ls -la tests/fixtures/build/ || true
+          FOUND=$(find tests/fixtures/build -maxdepth 1 -type f -executable 2>/dev/null | head -1)
+          if [ -z "$FOUND" ]; then
+            FOUND=$(find tests/fixtures/build -maxdepth 1 -type f 2>/dev/null | grep -v '\.py$' | head -1)
+          fi
+          if [ -z "$FOUND" ]; then
+            echo "FAIL: No executable found in tests/fixtures/build directory"
+            find tests/fixtures/build -type f 2>/dev/null || echo "build directory does not exist"
             exit 1
           fi
-          echo "PASS: build directory exists"
+          echo "PASS: Binary found: $FOUND"
+
+      - name: Run the compiled binary
+        run: |
+          BINARY=$(find tests/fixtures/build -maxdepth 1 -type f -executable 2>/dev/null | head -1)
+          if [ -z "$BINARY" ]; then
+            BINARY=$(find tests/fixtures/build -maxdepth 1 -type f 2>/dev/null | grep -v '\.py$' | head -1)
+          fi
+          if [ -z "$BINARY" ]; then
+            echo "FAIL: No executable to run"
+            exit 1
+          fi
+          echo "Running: $BINARY"
+          OUTPUT=$("$BINARY")
+          echo "Output: $OUTPUT"
+          if [ "$OUTPUT" != "Hello from Nuitka!" ]; then
+            echo "FAIL: Expected 'Hello from Nuitka!' but got '$OUTPUT'"
+            exit 1
+          fi
+          echo "PASS: Binary with version info runs correctly"

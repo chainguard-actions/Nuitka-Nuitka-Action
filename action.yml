@@ -200,30 +200,30 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Setup Environment Variables
       if: ${{ !inputs.disable-cache }}
-      shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
+      shell: bash
       run: |
         safe_action_path=$(printf '%s' "$ACTION_PATH" | tr -d '\n\r')
         echo "NUITKA_CACHE_DIR=${safe_action_path}/nuitka/cache" >> "$GITHUB_ENV"
         echo "PYTHON_VERSION=$(python --version | awk '{print $2}' | cut -d '.' -f 1,2)" >> "$GITHUB_ENV"
     - name: Install Dependencies
-      shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
         ACCESS_TOKEN: ${{ inputs.access-token }}
         NUITKA_VERSION: ${{ inputs.nuitka-version }}
+      shell: bash
       run: |
-        pip install -r "${ACTION_PATH}/requirements.txt"
+        pip install -r "$ACTION_PATH/requirements.txt"
 
         # With commercial access token, use that repository.
         if [ "$ACCESS_TOKEN" != "" ]; then
-          repo_url="git+https://${ACCESS_TOKEN}@github.com/Nuitka/Nuitka-commercial.git"
+          repo_url="git+https://$ACCESS_TOKEN@github.com/Nuitka/Nuitka-commercial.git"
         else
           repo_url="git+https://$@github.com/Nuitka/Nuitka.git"
         fi
 
-        pip install "${repo_url}/@${NUITKA_VERSION}#egg=nuitka"
+        pip install "${repo_url}/@$NUITKA_VERSION#egg=nuitka"
     - name: Install ccache
       # TODO: Proper "in" test could make sense here.
       if: ${{ inputs.disable-cache != 'ccache' && runner.os == 'Linux' }}

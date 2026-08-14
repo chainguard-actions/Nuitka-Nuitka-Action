@@ -1,47 +1,67 @@
-name: Test Nuitka onefile options
+name: Test build with onefile-specific options
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-onefile-options:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install build dependencies
+      - name: Install system dependencies for Nuitka
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y gcc python3-dev patchelf
 
-      - name: Create simple Python script
+      - name: Set up Python
         run: |
-          cat > hello_onefile.py << 'EOF'
-          print("Hello onefile!")
-          EOF
+          python --version
+          pip --version
 
-      - name: Build with Nuitka using onefile options
-        id: build
+      - id: build
         uses: .
         with:
-          script-name: hello_onefile.py
-          nuitka-version: "2.0"
-          standalone: "false"
-          onefile: "false"
-          module: "false"
+          working-directory: tests/fixtures
+          script-name: hello.py
+          standalone: "true"
+          onefile: "true"
           output-dir: build
-          disable-cache: "true"
-          show-scons: "false"
           assume-yes-for-downloads: "true"
-          onefile-tempdir-spec: "/tmp/nuitka_test"
+          disable-cache: "true"
+          onefile-tempdir-spec: "/tmp/nuitka_onefile_%PID%"
           onefile-child-grace-time: "3000"
 
-      - name: Assert build output exists
+      - name: Assert binary was created
         run: |
-          echo "Checking for build output..."
-          ls -la build/ || true
-          if [ ! -d "build" ]; then
-            echo "FAIL: output directory build does not exist"
+          echo "Checking for built binary..."
+          ls -la tests/fixtures/build/ || true
+          FOUND=$(find tests/fixtures/build -maxdepth 1 -type f -executable 2>/dev/null | head -1)
+          if [ -z "$FOUND" ]; then
+            FOUND=$(find tests/fixtures/build -maxdepth 1 -type f 2>/dev/null | grep -v '\.py$' | head -1)
+          fi
+          if [ -z "$FOUND" ]; then
+            echo "FAIL: No executable found in tests/fixtures/build directory"
+            find tests/fixtures/build -type f 2>/dev/null || echo "build directory does not exist"
             exit 1
           fi
-          echo "PASS: build directory exists"
+          echo "PASS: Binary found: $FOUND"
+
+      - name: Run the compiled binary
+        run: |
+          BINARY=$(find tests/fixtures/build -maxdepth 1 -type f -executable 2>/dev/null | head -1)
+          if [ -z "$BINARY" ]; then
+            BINARY=$(find tests/fixtures/build -maxdepth 1 -type f 2>/dev/null | grep -v '\.py$' | head -1)
+          fi
+          if [ -z "$BINARY" ]; then
+            echo "FAIL: No executable to run"
+            exit 1
+          fi
+          echo "Running: $BINARY"
+          OUTPUT=$("$BINARY")
+          echo "Output: $OUTPUT"
+          if [ "$OUTPUT" != "Hello from Nuitka!" ]; then
+            echo "FAIL: Expected 'Hello from Nuitka!' but got '$OUTPUT'"
+            exit 1
+          fi
+          echo "PASS: Binary with onefile options runs correctly"

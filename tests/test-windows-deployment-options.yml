@@ -1,10 +1,10 @@
-name: Test build with macOS-specific options
+name: Test build with Windows and deployment options
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-macos-options:
+  test-windows-deployment-options:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -29,14 +29,9 @@ jobs:
           output-dir: build
           assume-yes-for-downloads: "true"
           disable-cache: "true"
-          macos-app-icon: "app.icns"
-          macos-app-mode: "gui"
-          macos-app-protected-resource: "NSMicrophoneUsageDescription:Microphone access"
-          macos-app-version: "1.0.0"
-          macos-sign-identity: "ad-hoc"
-          macos-sign-notarization: "false"
-          macos-signed-app-name: "com.TestCompany.TestApp"
-          macos-target-arch: "native"
+          windows-icon-from-ico: "app.ico"
+          no-deployment-flag: "self-execution"
+          trademarks: "TestCompany Trademarks"
 
       - name: Assert binary was created
         run: |

@@ -1,10 +1,10 @@
-name: Test basic standalone onefile build
+name: Test build with custom output filename
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-basic:
+  test-output-file:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -27,32 +27,29 @@ jobs:
           standalone: "true"
           onefile: "true"
           output-dir: build
+          output-file: my_custom_binary
           assume-yes-for-downloads: "true"
           disable-cache: "true"
 
-      - name: Assert binary was created
+      - name: Assert binary was created with custom name
         run: |
-          echo "Checking for built binary..."
+          echo "Checking for custom-named binary..."
           ls -la tests/fixtures/build/ || true
-          FOUND=$(find tests/fixtures/build -maxdepth 1 -type f -executable 2>/dev/null | head -1)
-          if [ -z "$FOUND" ]; then
-            FOUND=$(find tests/fixtures/build -maxdepth 1 -type f 2>/dev/null | grep -v '\.py$' | head -1)
-          fi
-          if [ -z "$FOUND" ]; then
-            echo "FAIL: No executable found in tests/fixtures/build directory"
-            find tests/fixtures/build -type f 2>/dev/null || echo "build directory does not exist"
+          if [ ! -f "tests/fixtures/build/my_custom_binary" ] && [ ! -f "tests/fixtures/build/my_custom_binary.exe" ]; then
+            echo "FAIL: Custom binary 'my_custom_binary' not found in tests/fixtures/build directory"
+            ls -la tests/fixtures/build/ 2>/dev/null || echo "build directory does not exist"
             exit 1
           fi
-          echo "PASS: Binary found: $FOUND"
+          echo "PASS: Custom-named binary found"
 
-      - name: Run the compiled binary
+      - name: Run the custom-named binary
         run: |
-          BINARY=$(find tests/fixtures/build -maxdepth 1 -type f -executable 2>/dev/null | head -1)
-          if [ -z "$BINARY" ]; then
-            BINARY=$(find tests/fixtures/build -maxdepth 1 -type f 2>/dev/null | grep -v '\.py$' | head -1)
-          fi
-          if [ -z "$BINARY" ]; then
-            echo "FAIL: No executable to run"
+          if [ -f "tests/fixtures/build/my_custom_binary" ]; then
+            BINARY="tests/fixtures/build/my_custom_binary"
+          elif [ -f "tests/fixtures/build/my_custom_binary.exe" ]; then
+            BINARY="tests/fixtures/build/my_custom_binary.exe"
+          else
+            echo "FAIL: No custom binary to run"
             exit 1
           fi
           echo "Running: $BINARY"
@@ -62,4 +59,4 @@ jobs:
             echo "FAIL: Expected 'Hello from Nuitka!' but got '$OUTPUT'"
             exit 1
           fi
-          echo "PASS: Binary output matches expected"
+          echo "PASS: Custom-named binary runs correctly"

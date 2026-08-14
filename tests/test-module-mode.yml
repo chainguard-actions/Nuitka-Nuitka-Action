@@ -1,58 +1,45 @@
-name: Test Nuitka module mode
+name: Test module mode build
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-module:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install build dependencies
+      - name: Install system dependencies for Nuitka
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y gcc python3-dev patchelf
 
-      - name: Create simple Python module
+      - name: Set up Python
         run: |
-          cat > mymodule.py << 'EOF'
-          def greet(name):
-              return f"Hello, {name}!"
-          EOF
+          python --version
+          pip --version
 
-      - name: Build extension module with Nuitka
-        id: build
+      - id: build
         uses: .
         with:
+          working-directory: tests/fixtures
           script-name: mymodule.py
-          nuitka-version: "2.0"
           module: "true"
           standalone: "false"
           onefile: "false"
           output-dir: build
-          disable-cache: "true"
-          show-scons: "false"
           assume-yes-for-downloads: "true"
-
-      - name: Assert module build output exists
-        run: |
-          echo "Checking for module build output..."
-          ls -la build/ || true
-          if [ ! -d "build" ]; then
-            echo "FAIL: output directory build does not exist"
-            exit 1
-          fi
-          echo "PASS: build directory exists"
+          disable-cache: "true"
 
       - name: Assert extension module was created
         run: |
-          echo "Checking for .so extension module..."
-          if find build -name "mymodule*.so" -type f | grep -q .; then
-            echo "PASS: found extension module"
-            find build -name "mymodule*.so" -type f
-          else
-            echo "FAIL: no .so extension module found in build directory"
-            find build -type f || true
+          echo "Checking for built extension module..."
+          ls -la tests/fixtures/build/ || true
+          # Extension modules have .so on Linux, .pyd on Windows
+          FOUND=$(find tests/fixtures/build -maxdepth 2 \( -name "*.so" -o -name "*.pyd" \) 2>/dev/null | head -1)
+          if [ -z "$FOUND" ]; then
+            echo "FAIL: No extension module (.so/.pyd) found in tests/fixtures/build directory"
+            find tests/fixtures/build -type f 2>/dev/null || echo "build directory does not exist"
             exit 1
           fi
+          echo "PASS: Extension module found: $FOUND"

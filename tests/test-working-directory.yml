@@ -1,61 +1,71 @@
-name: Test Nuitka with working directory
+name: Test build with custom working directory
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-working-dir:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install build dependencies
+      - name: Install system dependencies for Nuitka
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y gcc python3-dev patchelf
 
-      - name: Create working directory and Python script
+      - name: Set up Python
         run: |
-          mkdir -p myproject
-          cat > myproject/app.py << 'EOF'
-          import sys
-          print(f"Python {sys.version}")
-          print("Build successful!")
-          EOF
+          python --version
+          pip --version
 
-      - name: Build with Nuitka using working directory
-        id: build
+      - name: Prepare working directory with script
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/myapp"
+          printf 'print("Hello from myapp!")\n' > "$GITHUB_WORKSPACE/myapp/app.py"
+
+      - id: build
         uses: .
         with:
-          working-directory: myproject
+          working-directory: myapp
           script-name: app.py
-          nuitka-version: "2.0"
-          standalone: "false"
-          onefile: "false"
-          module: "false"
-          output-dir: dist
-          disable-cache: "true"
-          show-scons: "false"
+          standalone: "true"
+          onefile: "true"
+          output-dir: build
           assume-yes-for-downloads: "true"
+          disable-cache: "true"
 
-      - name: Assert build output exists in working directory
+      - name: Assert binary was created in working directory build folder
         run: |
-          echo "Checking for build output in myproject/dist..."
-          ls -la myproject/dist/ || true
-          if [ ! -d "myproject/dist" ]; then
-            echo "FAIL: output directory myproject/dist does not exist"
+          echo "Checking for built binary in myapp/build..."
+          ls -la myapp/build/ || true
+          FOUND=$(find myapp/build -maxdepth 1 -type f -executable 2>/dev/null | head -1)
+          if [ -z "$FOUND" ]; then
+            FOUND=$(find myapp/build -maxdepth 1 -type f 2>/dev/null | grep -v '\.py$' | head -1)
+          fi
+          if [ -z "$FOUND" ]; then
+            echo "FAIL: No executable found in myapp/build directory"
+            find myapp -type f 2>/dev/null || echo "myapp directory contents not found"
             exit 1
           fi
-          echo "PASS: build directory exists"
+          echo "PASS: Binary found: $FOUND"
 
-      - name: Assert app executable was created
+      - name: Run the compiled binary
         run: |
-          echo "Checking for app executable..."
-          if find myproject/dist -name "app*" -type f | grep -q .; then
-            echo "PASS: found app executable"
-            find myproject/dist -name "app*" -type f
+          BINARY=$(find myapp/build -maxdepth 1 -type f -executable 2>/dev/null | head -1)
+          if [ -z "$BINARY" ]; then
+            BINARY=$(find myapp/build -maxdepth 1 -type f 2>/dev/null | grep -v '\.py$' | head -1)
+          fi
+          if [ -z "$BINARY" ]; then
+            echo "FAIL: No executable to run"
+            exit 1
+          fi
+          echo "Running: $BINARY"
+          OUTPUT=$("$BINARY")
+          echo "Output: $OUTPUT"
+          if echo "$OUTPUT" | grep -q "Hello from myapp!"; then
+            echo "PASS: Binary output matches expected"
           else
-            echo "FAIL: no app executable found in dist directory"
-            find myproject/dist -type f || true
+            echo "FAIL: Expected output containing 'Hello from myapp!' but got '$OUTPUT'"
             exit 1
           fi
