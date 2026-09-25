@@ -1,0 +1,89 @@
+name: Test Nuitka platform-specific options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            gcc \
+            python3-dev \
+            python3-pip \
+            python-is-python3 \
+            patchelf \
+            git
+          python --version
+          pip --version
+
+      - name: Create simple Python script
+        run: |
+          cat > hello.py << 'EOF'
+          print("Hello platform options!")
+          EOF
+
+      - name: Build with Nuitka (platform-specific options passed as empty/ignored on Linux)
+        id: build
+        uses: .
+        with:
+          script-name: hello.py
+          nuitka-version: "main"
+          mode: accelerated
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          output-dir: build
+          # Console handling (obsolete but must be covered)
+          disable-console: ""
+          enable-console: ""
+          # Windows-specific options (ignored on Linux, but inputs must be covered)
+          windows-console-mode: ""
+          windows-icon-from-ico: ""
+          windows-icon-from-exe: ""
+          onefile-windows-splash-screen-image: ""
+          windows-uac-admin: ""
+          windows-uac-uiaccess: ""
+          # Windows signing (commercial, ignored on Linux)
+          windows-signing-tool: ""
+          windows-certificate-name: ""
+          windows-certificate-sha1: ""
+          windows-certificate-filename: ""
+          windows-certificate-password: ""
+          windows-signed-content-comment: ""
+          # Windows service (commercial, ignored on Linux)
+          windows-service-name: ""
+          windows-service-grace-time: ""
+          windows-service-start-mode: ""
+          windows-service-cli: ""
+          # macOS-specific options (ignored on Linux)
+          macos-target-arch: ""
+          macos-app-icon: ""
+          macos-signed-app-name: ""
+          macos-app-name: ""
+          macos-app-mode: ""
+          macos-sign-identity: ""
+          macos-sign-notarization: ""
+          macos-app-version: ""
+          macos-app-protected-resource: ""
+          # Linux-specific options
+          linux-icon: ""
+          # Force stdout/stderr spec
+          force-stdout-spec: ""
+          force-stderr-spec: ""
+          # MinGW/MSVC (Windows only, ignored on Linux)
+          mingw64: ""
+          msvc: ""
+
+      - name: Assert build output exists
+        run: |
+          echo "Checking for build output..."
+          find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
+          if find build/ -name "hello*" -type f | grep -q .; then
+            echo "PASS: Build output found"
+          else
+            echo "FAIL: Expected build output not found in build/"
+            exit 1
+          fi

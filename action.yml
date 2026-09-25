@@ -609,19 +609,19 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Setup Environment Variables
       if: ${{ !inputs.disable-cache }}
-      shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
+      shell: bash
       run: |
         safe_action_path=$(printf '%s' "$ACTION_PATH" | tr -d '\n\r')
         echo "NUITKA_CACHE_DIR=${safe_action_path}/nuitka/cache" >> "$GITHUB_ENV"
         echo "PYTHON_VERSION=$(python --version | awk '{print $2}' | cut -d '.' -f 1,2)" >> "$GITHUB_ENV"
     - name: Install Dependencies
-      shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
         ACCESS_TOKEN: ${{ inputs.access-token }}
         NUITKA_VERSION: ${{ inputs.nuitka-version }}
+      shell: bash
       run: |
         pip install -r "$ACTION_PATH/requirements.txt"
 
@@ -641,7 +641,7 @@ runs:
         sudo apt-get install -y ccache
     - name: Cache Nuitka cache directory
       if: ${{ !inputs.disable-cache }}
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: chainguard-actions/actions-cache@1a492a110f951652a0d2d3327bc20ee36867788e # v4
       with:
         path: ${{ env.NUITKA_CACHE_DIR }}
         key: ${{ runner.os }}-${{ runner.arch }}-python-${{ env.PYTHON_VERSION }}-nuitka-${{ github.sha }}

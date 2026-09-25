@@ -1,0 +1,74 @@
+name: Test Nuitka data inclusion options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            gcc \
+            python3-dev \
+            python3-pip \
+            python-is-python3 \
+            patchelf \
+            git
+          python --version
+          pip --version
+
+      - name: Create Python script and data files
+        run: |
+          mkdir -p mydata
+          echo "some data" > mydata/data.txt
+          cat > hello.py << 'EOF'
+          import os
+          print("Hello data inclusion!")
+          EOF
+
+      - name: Build with Nuitka (data inclusion options)
+        id: build
+        uses: .
+        with:
+          script-name: hello.py
+          nuitka-version: "main"
+          mode: accelerated
+          disable-cache: "true"
+          assume-yes-for-downloads: "true"
+          output-dir: build
+          # Data file inclusion options
+          include-package-data: ""
+          include-data-files: ""
+          include-data-dir: ""
+          noinclude-data-files: ""
+          include-onefile-external-data: ""
+          include-raw-dir: ""
+          # Qt plugin options (empty values - not using Qt)
+          include-qt-plugins: ""
+          noinclude-qt-plugins: ""
+          noinclude-qt-translations: ""
+          # Tk/Tcl options (empty values)
+          tk-library-dir: ""
+          tcl-library-dir: ""
+          # PMW options
+          include-pmw-blt: ""
+          include-pmw-color: ""
+          # Pickle support
+          include-pickle-support-module: ""
+          # UPX options
+          upx-binary: ""
+          upx-disable-cache: ""
+
+      - name: Assert build output exists
+        run: |
+          echo "Checking for build output..."
+          find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
+          if find build/ -name "hello*" -type f | grep -q .; then
+            echo "PASS: Build output found"
+          else
+            echo "FAIL: Expected build output not found in build/"
+            exit 1
+          fi
