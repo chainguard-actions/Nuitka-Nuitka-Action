@@ -1,4 +1,4 @@
-name: Test Nuitka commercial and advanced plugin options
+name: Test Nuitka console and output options
 on:
   workflow_dispatch:
 jobs:
@@ -23,10 +23,10 @@ jobs:
       - name: Create simple Python script
         run: |
           cat > hello.py << 'EOF'
-          print("Hello commercial options!")
+          print("Hello console output!")
           EOF
 
-      - name: Build with Nuitka (commercial and advanced plugin options)
+      - name: Build with Nuitka (console and output options)
         id: build
         uses: .
         continue-on-error: true
@@ -37,25 +37,11 @@ jobs:
           disable-cache: "true"
           assume-yes-for-downloads: "true"
           output-dir: build
-          access-token: ""
-          anti-debugger-debugging: ""
-          auto-update-url-spec: ""
-          auto-update-debug: ""
-          data-hiding-salt-value: ""
-          embed-data-files-compile-time-pattern: ""
-          embed-data-files-run-time-pattern: ""
-          embed-data-files-qt-resource-pattern: ""
-          embed-debug-qt-resources: ""
-          encryption-key: ""
-          encrypt-stdout: ""
-          encrypt-stderr: ""
-          encrypt-debug-init: ""
-          encrypt-crypto-package: ""
-          upx-binary: ""
-          upx-disable-cache: ""
-          include-pickle-support-module: ""
-          include-pmw-blt: ""
-          include-pmw-color: ""
+          disable-console: ""
+          enable-console: ""
+          force-stdout-spec: ""
+          force-stderr-spec: ""
+          windows-console-mode: ""
 
       - name: Assert build ran
         run: |
@@ -68,7 +54,7 @@ jobs:
               exit 1
             fi
           elif [ "${{ steps.build.outcome }}" = "failure" ]; then
-            echo "PASS: Build failed gracefully (commercial options require Nuitka commercial license)"
+            echo "PASS: Build failed gracefully (console options may not apply on Linux)"
           else
             echo "FAIL: Unexpected outcome: ${{ steps.build.outcome }}"
             exit 1

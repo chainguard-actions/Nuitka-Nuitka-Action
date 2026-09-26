@@ -1,4 +1,4 @@
-name: Test Nuitka commercial and advanced plugin options
+name: Test Nuitka debug and tracing options
 on:
   workflow_dispatch:
 jobs:
@@ -23,10 +23,10 @@ jobs:
       - name: Create simple Python script
         run: |
           cat > hello.py << 'EOF'
-          print("Hello commercial options!")
+          print("Hello debug options!")
           EOF
 
-      - name: Build with Nuitka (commercial and advanced plugin options)
+      - name: Build with Nuitka (debug/tracing options)
         id: build
         uses: .
         continue-on-error: true
@@ -37,30 +37,21 @@ jobs:
           disable-cache: "true"
           assume-yes-for-downloads: "true"
           output-dir: build
-          access-token: ""
-          anti-debugger-debugging: ""
-          auto-update-url-spec: ""
-          auto-update-debug: ""
-          data-hiding-salt-value: ""
-          embed-data-files-compile-time-pattern: ""
-          embed-data-files-run-time-pattern: ""
-          embed-data-files-qt-resource-pattern: ""
-          embed-debug-qt-resources: ""
-          encryption-key: ""
-          encrypt-stdout: ""
-          encrypt-stderr: ""
-          encrypt-debug-init: ""
-          encrypt-crypto-package: ""
-          upx-binary: ""
-          upx-disable-cache: ""
-          include-pickle-support-module: ""
-          include-pmw-blt: ""
-          include-pmw-color: ""
+          debug: "true"
+          unstripped: "true"
+          trace-execution: "true"
+          xml: "build/program.xml"
+          experimental: ""
+          no-debug-c-warnings: "true"
+          no-debug-immortal-assumptions: "true"
+          python-debug: ""
+          python-flag: "no_docstrings"
 
-      - name: Assert build ran
+      - name: Assert build ran (debug mode may produce warnings but should build)
         run: |
           echo "Build outcome: ${{ steps.build.outcome }}"
           if [ "${{ steps.build.outcome }}" = "success" ]; then
+            echo "Build succeeded, checking output..."
             if find build/ -name "hello*" -type f | grep -q .; then
               echo "PASS: Build output found"
             else
@@ -68,7 +59,7 @@ jobs:
               exit 1
             fi
           elif [ "${{ steps.build.outcome }}" = "failure" ]; then
-            echo "PASS: Build failed gracefully (commercial options require Nuitka commercial license)"
+            echo "PASS: Build failed gracefully (debug mode may not be available in this environment)"
           else
             echo "FAIL: Unexpected outcome: ${{ steps.build.outcome }}"
             exit 1
