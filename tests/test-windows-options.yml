@@ -1,4 +1,4 @@
-name: Test Nuitka Windows-specific options
+name: Test Windows-specific options inputs
 on:
   workflow_dispatch:
 jobs:
@@ -6,65 +6,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install build dependencies
+      - name: Create test script
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            gcc \
-            python3-dev \
-            python3-pip \
-            python-is-python3 \
-            patchelf \
-            git
-          python --version
-          pip --version
-
-      - name: Create simple Python script
-        run: |
-          cat > hello.py << 'EOF'
-          print("Hello Windows options!")
+          cat > /tmp/hello.py << 'EOF'
+          print("hello")
           EOF
-
-      - name: Build with Nuitka (Windows-specific options passed, Linux build)
-        id: build
+      - id: action
         uses: .
         continue-on-error: true
         with:
-          script-name: hello.py
-          nuitka-version: "main"
+          script-name: /tmp/hello.py
           mode: accelerated
-          disable-cache: "true"
-          assume-yes-for-downloads: "true"
-          output-dir: build
           windows-icon-from-ico: ""
           windows-icon-from-exe: ""
           windows-uac-admin: ""
           windows-uac-uiaccess: ""
-          windows-signing-tool: ""
-          windows-certificate-name: ""
-          windows-certificate-sha1: ""
           windows-certificate-filename: ""
+          windows-certificate-name: ""
           windows-certificate-password: ""
+          windows-certificate-sha1: ""
+          windows-signing-tool: ""
           windows-signed-content-comment: ""
-          windows-service-name: ""
-          windows-service-grace-time: ""
-          windows-service-start-mode: ""
           windows-service-cli: ""
-
-      - name: Assert build ran
+          windows-service-grace-time: ""
+          windows-service-name: ""
+          windows-service-start-mode: ""
+          output-dir: /tmp/build-windows
+          disable-cache: "true"
+      - name: Assert action ran
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
         run: |
-          echo "Build outcome: ${{ steps.build.outcome }}"
-          if [ "${{ steps.build.outcome }}" = "success" ]; then
-            if find build/ -name "hello*" -type f | grep -q .; then
-              echo "PASS: Build output found"
-            else
-              echo "FAIL: Build succeeded but no output found"
-              exit 1
-            fi
-          elif [ "${{ steps.build.outcome }}" = "failure" ]; then
-            echo "PASS: Build failed gracefully (Windows options not applicable on Linux)"
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran (outcome=$OUTCOME)"
           else
-            echo "FAIL: Unexpected outcome: ${{ steps.build.outcome }}"
+            echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
           fi

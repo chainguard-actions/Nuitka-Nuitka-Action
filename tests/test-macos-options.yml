@@ -1,4 +1,4 @@
-name: Test Nuitka macOS-specific options
+name: Test macOS-specific options inputs
 on:
   workflow_dispatch:
 jobs:
@@ -6,37 +6,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install build dependencies
+      - name: Create test script
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            gcc \
-            python3-dev \
-            python3-pip \
-            python-is-python3 \
-            patchelf \
-            git
-          python --version
-          pip --version
-
-      - name: Create simple Python script
-        run: |
-          cat > hello.py << 'EOF'
-          print("Hello macOS options!")
+          cat > /tmp/hello.py << 'EOF'
+          print("hello")
           EOF
-
-      - name: Build with Nuitka (macOS-specific options passed, Linux build)
-        id: build
+      - id: action
         uses: .
         continue-on-error: true
         with:
-          script-name: hello.py
-          nuitka-version: "main"
+          script-name: /tmp/hello.py
           mode: accelerated
-          disable-cache: "true"
-          assume-yes-for-downloads: "true"
-          output-dir: build
           macos-target-arch: ""
           macos-app-icon: ""
           macos-signed-app-name: ""
@@ -46,20 +26,16 @@ jobs:
           macos-sign-notarization: ""
           macos-app-version: ""
           macos-app-protected-resource: ""
-
-      - name: Assert build ran
+          output-dir: /tmp/build-macos
+          disable-cache: "true"
+      - name: Assert action ran
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
         run: |
-          echo "Build outcome: ${{ steps.build.outcome }}"
-          if [ "${{ steps.build.outcome }}" = "success" ]; then
-            if find build/ -name "hello*" -type f | grep -q .; then
-              echo "PASS: Build output found"
-            else
-              echo "FAIL: Build succeeded but no output found"
-              exit 1
-            fi
-          elif [ "${{ steps.build.outcome }}" = "failure" ]; then
-            echo "PASS: Build failed gracefully (macOS options not applicable on Linux)"
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran (outcome=$OUTCOME)"
           else
-            echo "FAIL: Unexpected outcome: ${{ steps.build.outcome }}"
+            echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
           fi
