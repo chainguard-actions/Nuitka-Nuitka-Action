@@ -1,4 +1,4 @@
-name: Test commercial and advanced plugin options inputs
+name: Test commercial feature inputs
 on:
   workflow_dispatch:
 jobs:
@@ -6,37 +6,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Create test script
-        run: |
-          cat > /tmp/hello.py << 'EOF'
-          print("hello")
-          EOF
+      - name: Create dummy script
+        run: echo "print('hello')" > hello.py
       - id: action
         uses: .
         continue-on-error: true
         with:
-          script-name: /tmp/hello.py
+          script-name: hello.py
           mode: accelerated
           access-token: ""
-          anti-debugger-debugging: ""
-          auto-update-debug: ""
+          anti-debugger-debugging: "false"
           auto-update-url-spec: ""
+          auto-update-debug: "false"
           data-hiding-salt-value: ""
           embed-data-files-compile-time-pattern: ""
-          embed-data-files-qt-resource-pattern: ""
           embed-data-files-run-time-pattern: ""
-          embed-debug-qt-resources: ""
+          embed-data-files-qt-resource-pattern: ""
+          embed-debug-qt-resources: "false"
           encryption-key: ""
+          encrypt-stdout: "false"
+          encrypt-stderr: "false"
+          encrypt-debug-init: "false"
           encrypt-crypto-package: ""
-          encrypt-debug-init: ""
-          encrypt-stderr: ""
-          encrypt-stdout: ""
-          include-pickle-support-module: ""
-          include-pmw-blt: ""
-          include-pmw-color: ""
-          upx-binary: ""
-          upx-disable-cache: ""
-          output-dir: /tmp/build-commercial
           disable-cache: "true"
       - name: Assert action ran
         env:

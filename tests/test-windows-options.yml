@@ -1,4 +1,4 @@
-name: Test Windows-specific options inputs
+name: Test Windows-specific inputs
 on:
   workflow_dispatch:
 jobs:
@@ -6,32 +6,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Create test script
-        run: |
-          cat > /tmp/hello.py << 'EOF'
-          print("hello")
-          EOF
+      - name: Create dummy script
+        run: echo "print('hello')" > hello.py
       - id: action
         uses: .
         continue-on-error: true
         with:
-          script-name: /tmp/hello.py
+          script-name: hello.py
           mode: accelerated
           windows-icon-from-ico: ""
           windows-icon-from-exe: ""
-          windows-uac-admin: ""
-          windows-uac-uiaccess: ""
+          windows-uac-admin: "false"
+          windows-uac-uiaccess: "false"
           windows-certificate-filename: ""
           windows-certificate-name: ""
           windows-certificate-password: ""
           windows-certificate-sha1: ""
           windows-signing-tool: ""
           windows-signed-content-comment: ""
-          windows-service-cli: ""
-          windows-service-grace-time: ""
           windows-service-name: ""
+          windows-service-grace-time: ""
           windows-service-start-mode: ""
-          output-dir: /tmp/build-windows
+          windows-service-cli: ""
           disable-cache: "true"
       - name: Assert action ran
         env:

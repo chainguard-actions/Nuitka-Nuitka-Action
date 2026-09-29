@@ -1,4 +1,4 @@
-name: Test macOS-specific options inputs
+name: Test macOS-specific inputs
 on:
   workflow_dispatch:
 jobs:
@@ -6,16 +6,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Create test script
-        run: |
-          cat > /tmp/hello.py << 'EOF'
-          print("hello")
-          EOF
+      - name: Create dummy script
+        run: echo "print('hello')" > hello.py
       - id: action
         uses: .
         continue-on-error: true
         with:
-          script-name: /tmp/hello.py
+          script-name: hello.py
           mode: accelerated
           macos-target-arch: ""
           macos-app-icon: ""
@@ -23,10 +20,10 @@ jobs:
           macos-app-name: ""
           macos-app-mode: ""
           macos-sign-identity: ""
-          macos-sign-notarization: ""
+          macos-sign-notarization: "false"
           macos-app-version: ""
           macos-app-protected-resource: ""
-          output-dir: /tmp/build-macos
+          linux-icon: ""
           disable-cache: "true"
       - name: Assert action ran
         env:
