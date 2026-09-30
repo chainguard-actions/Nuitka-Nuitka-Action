@@ -10,41 +10,34 @@
 
 **Harden Agent Version:** `2`
 
-Action **Nuitka--Nuitka-Action/v1.3** was hardened automatically. 7 finding(s) were identified and resolved across 1 iteration(s).
+Action **Nuitka--Nuitka-Action/v1.3** was hardened automatically. 6 finding(s) were identified and resolved across 1 iteration(s).
 
 ## Findings Fixed
 
 ### script-injection (severity: high)
 
-Sub-rule (a): The 'Setup Environment Variables' run: block directly interpolates ${{ github.action_path }} into the shell command string. Although github.action_path is not attacker-controlled in the same way as inputs.*, any ${{ ... }} expression inside a run: block is a script-injection finding because the value flows through YAML template substitution before the shell ever sees it. Offending line: `echo "NUITKA_CACHE_DIR=${{ github.action_path }}/nuitka/cache" >> $GITHUB_ENV`
+The 'Setup Environment Variables' run: block directly interpolates ${{ github.action_path }} into a shell command string. The 'Install Dependencies' run: block directly interpolates attacker-controlled inputs ${{ inputs.access-token }} (used twice in shell conditionals and URL construction) and ${{inputs.nuitka-version}} (embedded in a pip install URL) into shell commands. Any ${{ }} expression inside a run: block is a script-injection risk because YAML template substitution happens before the shell ever sees the value, allowing metacharacters to break out of the intended command context. These should be moved to env: variables and then double-quoted in the shell script.
 
 Locations:
 
-- `action.yml:637`
-
-### script-injection (severity: high)
-
-Sub-rule (a): The 'Install Dependencies' run: block directly interpolates multiple untrusted expressions into shell commands: (1) `${{ github.action_path }}` in `pip install -r "${{ github.action_path }}/requirements.txt"`, (2) `${{ inputs.access-token }}` in the if-condition and in the repo_url construction `git+https://${{ inputs.access-token }}@github.com/...`, and (3) `${{inputs.nuitka-version }}` in `pip install "${repo_url}/@${{inputs.nuitka-version }}#egg=nuitka"`. The access-token and nuitka-version inputs are attacker-controllable and allow arbitrary command injection.
-
-Locations:
-
-- `action.yml:643`
+- `action.yml:541`
+- `action.yml:548`
 
 ### github-env-injection (severity: high)
 
-The 'Setup Environment Variables' run: block writes a value derived from ${{ github.action_path }} directly to $GITHUB_ENV without the required sanitization step (printf '%s' ... | tr -d '\n\r'). Offending line: `echo "NUITKA_CACHE_DIR=${{ github.action_path }}/nuitka/cache" >> $GITHUB_ENV`. A newline injected into github.action_path could allow an attacker to set arbitrary environment variables for subsequent steps.
+The 'Setup Environment Variables' run: block writes ${{ github.action_path }} directly to $GITHUB_ENV without sanitization: `echo "NUITKA_CACHE_DIR=${{ github.action_path }}/nuitka/cache" >> $GITHUB_ENV`. Although github.action_path is not directly attacker-controlled, the check requires that any expression written to GITHUB_ENV, GITHUB_OUTPUT, or GITHUB_PATH must be sanitized with `printf '%s' ... | tr -d '\n\r'` before the write to prevent newline injection attacks that could poison subsequent environment variable reads.
 
 Locations:
 
-- `action.yml:637`
+- `action.yml:541`
 
 ### unpinned-uses (severity: high)
 
-The action uses `actions/cache@v4`, which is pinned to a mutable version tag rather than an immutable 40-character commit SHA. This is vulnerable to supply-chain attacks if the tag is moved. It should be pinned to a full SHA, e.g. `actions/cache@1bd1e32a3bdc45362d1e726936510720a7c6158d # v4`.
+The composite action uses `actions/cache@v4` which is pinned to a mutable version tag rather than an immutable full 40-character commit SHA. A tag can be moved to point to a different (potentially malicious) commit at any time, making this a supply-chain risk. It should be pinned to a full SHA, e.g. `actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4`.
 
 Locations:
 
-- `action.yml:659`
+- `action.yml:560`
 
 ### static-inline-injection (severity: high)
 
@@ -74,12 +67,12 @@ Locations:
 
 ### Iteration 1
 
-**Fixes applied:** script-injection, github-env-injection, static-inline-injection, unpinned-uses
+**Fixes applied:** script-injection, github-env-injection, unpinned-uses, static-inline-injection
 
 **Notes:**
 
 Fixed all findings in action.yml:
-1. Setup Environment Variables step: moved `${{ github.action_path }}` to env block as `ACTION_PATH`, then sanitized with `printf '%s' "$ACTION_PATH" | tr -d '\n\r'` before writing to GITHUB_ENV (fixes both script-injection and github-env-injection).
-2. Install Dependencies step: moved `${{ github.action_path }}`, `${{ inputs.access-token }}`, and `${{ inputs.nuitka-version }}` to env block as `ACTION_PATH`, `ACCESS_TOKEN`, and `NUITKA_VERSION` respectively, then referenced them as plain shell variables (fixes script-injection and static-inline-injection findings).
-3. Pinned `actions/cache@v4` to full commit SHA `actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4` (fixes unpinned-uses).
+1. 'Setup Environment Variables' step: Moved `${{ github.action_path }}` to env var `ACTION_PATH`, added newline sanitization with `printf '%s' "$ACTION_PATH" | tr -d '\n\r'` before writing to GITHUB_ENV, and quoted `$GITHUB_ENV`.
+2. 'Install Dependencies' step: Moved `${{ github.action_path }}`, `${{ inputs.access-token }}`, and `${{inputs.nuitka-version }}` to env vars `ACTION_PATH`, `ACCESS_TOKEN`, and `NUITKA_VERSION` respectively, and referenced them as plain shell variables in the run block.
+3. Pinned `actions/cache@v4` to full commit SHA `0057852bfaa89a56745cba8c7296529d2fc39830 # v4`.
 

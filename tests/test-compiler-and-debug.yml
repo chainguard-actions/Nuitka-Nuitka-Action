@@ -1,4 +1,4 @@
-name: Test Nuitka compiler, debug, and version-info inputs
+name: Test Nuitka build with compiler, debug, and deployment inputs
 on:
   workflow_dispatch:
 jobs:
@@ -26,9 +26,8 @@ jobs:
           print("Hello from Nuitka!")
           EOF
 
-      - name: Build with Nuitka (compiler/debug/version-info inputs)
+      - name: Build with Nuitka (compiler, debug, deployment inputs)
         id: build
-        continue-on-error: true
         uses: .
         with:
           script-name: hello.py
@@ -37,53 +36,48 @@ jobs:
           disable-cache: "true"
           assume-yes-for-downloads: "true"
           output-dir: build
-          # Compiler controls
-          clang: "false"
-          mingw64: "false"
+          # Compiler inputs
+          clang: ""
+          mingw64: ""
           msvc: ""
           jobs: "1"
-          lto: "no"
+          lto: "auto"
           static-libpython: "auto"
           cf-protection: "auto"
-          # Debug features
-          debug: "false"
-          no-debug-immortal-assumptions: "false"
-          no-debug-c-warnings: "false"
-          unstripped: "false"
-          trace-execution: "false"
+          low-memory: "true"
+          # Debug inputs
+          debug: ""
+          no-debug-immortal-assumptions: ""
+          no-debug-c-warnings: ""
+          unstripped: ""
+          trace-execution: ""
           xml: ""
           experimental: ""
-          low-memory: "false"
-          # Version information
-          company-name: "TestCompany"
-          product-name: "TestProduct"
-          file-version: "1.0.0.0"
-          product-version: "1.0.0.0"
-          file-description: "Test binary"
-          copyright: "Copyright 2024"
-          trademarks: "TestMark"
-          # Tracing/reporting
-          report: ""
-          report-diffable: "false"
-          report-user-provided: ""
-          report-template: ""
-          quiet: "false"
-          show-scons: "false"
-          show-memory: "false"
+          # Deployment inputs
+          deployment: ""
+          no-deployment-flag: ""
+          # Onefile inputs
+          onefile-tempdir-spec: ""
+          onefile-child-grace-time: ""
+          onefile-no-compression: ""
+          onefile-windows-splash-screen-image: ""
+          # Console inputs (obsolete but still accepted)
+          disable-console: ""
+          enable-console: ""
+          # OS-level output redirection
+          force-stdout-spec: ""
+          force-stderr-spec: ""
 
-      - name: Assert build ran (or failed gracefully with unsupported inputs)
+      - name: Assert build output exists
         run: |
-          echo "Build outcome: ${{ steps.build.outcome }}"
-          if [ "${{ steps.build.outcome }}" = "success" ]; then
-            if find build/ -name "hello*" -type f | grep -q .; then
-              echo "PASS: Build output found"
-            else
-              echo "FAIL: Build succeeded but no output found"
-              exit 1
-            fi
-          elif [ "${{ steps.build.outcome }}" = "failure" ]; then
-            echo "PASS: Action ran and failed gracefully (expected for some input combinations)"
+          echo "Checking for build output..."
+          echo "=== build/ directory contents ==="
+          find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
+          echo "================================="
+          if find build/ -name "hello*" -type f | grep -q .; then
+            echo "PASS: Build output found"
+            find build/ -name "hello*" -type f
           else
-            echo "FAIL: Unexpected outcome: ${{ steps.build.outcome }}"
+            echo "FAIL: Expected build output not found in build/"
             exit 1
           fi

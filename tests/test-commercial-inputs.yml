@@ -1,4 +1,4 @@
-name: Test Nuitka commercial and access-token inputs
+name: Test Nuitka build with commercial plugin inputs (no-op values)
 on:
   workflow_dispatch:
 jobs:
@@ -26,9 +26,8 @@ jobs:
           print("Hello from Nuitka!")
           EOF
 
-      - name: Build with Nuitka (commercial plugin inputs, no real token)
+      - name: Build with Nuitka (commercial plugin inputs as empty/no-op)
         id: build
-        continue-on-error: true
         uses: .
         with:
           script-name: hello.py
@@ -37,52 +36,37 @@ jobs:
           disable-cache: "true"
           assume-yes-for-downloads: "true"
           output-dir: build
-          # Access token (empty = use public Nuitka, not commercial)
+          # Commercial access token (empty = use open-source Nuitka)
           access-token: ""
-          # Anti-debugger plugin (commercial)
-          anti-debugger-debugging: "false"
-          # Automatic-updates plugin (commercial)
+          # Anti-debugger plugin inputs (commercial, no-op without commercial)
+          anti-debugger-debugging: ""
+          # Auto-update plugin inputs (commercial, no-op without commercial)
           auto-update-url-spec: ""
-          auto-update-debug: "false"
-          # Data-hiding plugin (commercial)
+          auto-update-debug: ""
+          # Data-hiding plugin inputs (commercial, no-op without commercial)
           data-hiding-salt-value: ""
-          # Datafile-inclusion-ng plugin (commercial)
+          # Datafile-inclusion-ng plugin inputs (commercial, no-op without commercial)
           embed-data-files-compile-time-pattern: ""
           embed-data-files-run-time-pattern: ""
           embed-data-files-qt-resource-pattern: ""
-          embed-debug-qt-resources: "false"
-          # Signing plugin (commercial, Windows only)
-          windows-signing-tool: ""
-          windows-certificate-name: ""
-          windows-certificate-sha1: ""
-          windows-certificate-filename: ""
-          windows-certificate-password: ""
-          windows-signed-content-comment: ""
-          # Traceback-encryption plugin (commercial)
+          embed-debug-qt-resources: ""
+          # Traceback-encryption plugin inputs (commercial, no-op without commercial)
           encryption-key: ""
-          encrypt-stdout: "false"
-          encrypt-stderr: "false"
-          encrypt-debug-init: "false"
+          encrypt-stdout: ""
+          encrypt-stderr: ""
+          encrypt-debug-init: ""
           encrypt-crypto-package: ""
-          # Windows-service plugin (commercial)
-          windows-service-name: ""
-          windows-service-grace-time: ""
-          windows-service-start-mode: ""
-          windows-service-cli: "false"
 
-      - name: Assert build ran (or failed gracefully)
+      - name: Assert build output exists
         run: |
-          echo "Build outcome: ${{ steps.build.outcome }}"
-          if [ "${{ steps.build.outcome }}" = "success" ]; then
-            if find build/ -name "hello*" -type f | grep -q .; then
-              echo "PASS: Build output found"
-            else
-              echo "FAIL: Build succeeded but no output found"
-              exit 1
-            fi
-          elif [ "${{ steps.build.outcome }}" = "failure" ]; then
-            echo "PASS: Action ran and failed gracefully (commercial features not available without token)"
+          echo "Checking for build output..."
+          echo "=== build/ directory contents ==="
+          find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
+          echo "================================="
+          if find build/ -name "hello*" -type f | grep -q .; then
+            echo "PASS: Build output found"
+            find build/ -name "hello*" -type f
           else
-            echo "FAIL: Unexpected outcome: ${{ steps.build.outcome }}"
+            echo "FAIL: Expected build output not found in build/"
             exit 1
           fi

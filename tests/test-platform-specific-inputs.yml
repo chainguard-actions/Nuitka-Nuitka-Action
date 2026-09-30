@@ -1,4 +1,4 @@
-name: Test Nuitka with reporting, onefile, and console options
+name: Test Nuitka build with platform-specific inputs
 on:
   workflow_dispatch:
 jobs:
@@ -22,56 +22,63 @@ jobs:
 
       - name: Create simple Python script
         run: |
-          cat > reporter.py << 'EOF'
-          print("Reporter app")
+          cat > hello.py << 'EOF'
+          print("Hello from Nuitka!")
           EOF
 
-      - name: Build with Nuitka (reporting, onefile, console, OS options)
+      - name: Build with Nuitka (platform-specific inputs)
         id: build
         uses: .
         with:
-          script-name: reporter.py
+          script-name: hello.py
           nuitka-version: "main"
           mode: accelerated
           disable-cache: "true"
           assume-yes-for-downloads: "true"
           output-dir: build
-          report: ""
-          report-diffable: "false"
-          report-user-provided: ""
-          report-template: ""
-          onefile-tempdir-spec: ""
-          onefile-child-grace-time: ""
-          onefile-no-compression: "false"
-          onefile-windows-splash-screen-image: ""
-          disable-console: "false"
-          enable-console: "false"
+          # Windows-specific inputs (no-op on Linux)
           windows-console-mode: ""
           windows-icon-from-ico: ""
           windows-icon-from-exe: ""
-          windows-uac-admin: "false"
-          windows-uac-uiaccess: "false"
+          windows-uac-admin: ""
+          windows-uac-uiaccess: ""
+          # Windows signing inputs (no-op on Linux)
+          windows-signing-tool: ""
+          windows-certificate-name: ""
+          windows-certificate-sha1: ""
+          windows-certificate-filename: ""
+          windows-certificate-password: ""
+          windows-signed-content-comment: ""
+          # Windows service inputs (no-op on Linux)
+          windows-service-name: ""
+          windows-service-grace-time: ""
+          windows-service-start-mode: ""
+          windows-service-cli: ""
+          # macOS-specific inputs (no-op on Linux)
           macos-target-arch: ""
           macos-app-icon: ""
           macos-signed-app-name: ""
           macos-app-name: ""
           macos-app-mode: ""
           macos-sign-identity: ""
-          macos-sign-notarization: "false"
+          macos-sign-notarization: ""
           macos-app-version: ""
           macos-app-protected-resource: ""
+          # Linux-specific inputs
           linux-icon: ""
-          force-stdout-spec: ""
-          force-stderr-spec: ""
+          # UPX plugin inputs
           upx-binary: ""
-          upx-disable-cache: "false"
+          upx-disable-cache: ""
 
       - name: Assert build output exists
         run: |
           echo "Checking for build output..."
+          echo "=== build/ directory contents ==="
           find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
-          if find build/ -name "reporter*" -type f | grep -q .; then
+          echo "================================="
+          if find build/ -name "hello*" -type f | grep -q .; then
             echo "PASS: Build output found"
+            find build/ -name "hello*" -type f
           else
             echo "FAIL: Expected build output not found in build/"
             exit 1

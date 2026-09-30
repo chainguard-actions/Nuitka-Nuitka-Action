@@ -1,4 +1,4 @@
-name: Test Nuitka with inclusion, data, and plugin options
+name: Test Nuitka build with inclusion and plugin inputs
 on:
   workflow_dispatch:
 jobs:
@@ -20,28 +20,30 @@ jobs:
           python --version
           pip --version
 
-      - name: Create Python script and data files
+      - name: Create simple Python script and data files
         run: |
-          mkdir -p mydata
-          echo "data content" > mydata/sample.txt
-          cat > dataapp.py << 'EOF'
-          print("Data app")
+          cat > hello.py << 'EOF'
+          print("Hello from Nuitka!")
           EOF
+          mkdir -p mydata
+          echo "sample data" > mydata/sample.txt
 
-      - name: Build with Nuitka (inclusion and plugin options)
+      - name: Build with Nuitka (inclusion and plugin inputs)
         id: build
         uses: .
         with:
-          script-name: dataapp.py
+          script-name: hello.py
           nuitka-version: "main"
           mode: accelerated
           disable-cache: "true"
           assume-yes-for-downloads: "true"
           output-dir: build
+          # Plugin inputs
           enable-plugins: ""
           user-plugin: ""
-          plugin-no-detection: "false"
+          plugin-no-detection: ""
           module-parameter: ""
+          # Inclusion inputs
           include-package-data: ""
           include-data-files: ""
           include-data-dir: ""
@@ -52,9 +54,10 @@ jobs:
           include-module: ""
           include-plugin-directory: ""
           include-plugin-files: ""
-          prefer-source-code: "false"
+          prefer-source-code: ""
           nofollow-import-to: ""
           user-package-configuration-file: ""
+          # Anti-bloat plugin options
           noinclude-setuptools-mode: "warning"
           noinclude-pytest-mode: "warning"
           noinclude-unittest-mode: "warning"
@@ -64,21 +67,28 @@ jobs:
           noinclude-numba-mode: "warning"
           noinclude-default-mode: "warning"
           noinclude-custom-mode: ""
-          include-pickle-support-module: ""
-          include-pmw-blt: "true"
-          include-pmw-color: "true"
+          # Qt plugin options
           include-qt-plugins: ""
           noinclude-qt-plugins: ""
-          noinclude-qt-translations: "false"
+          noinclude-qt-translations: ""
+          # Pmw plugin options
+          include-pmw-blt: ""
+          include-pmw-color: ""
+          # Tk/Tcl plugin options
           tk-library-dir: ""
           tcl-library-dir: ""
+          # Dill-compat plugin options
+          include-pickle-support-module: ""
 
       - name: Assert build output exists
         run: |
           echo "Checking for build output..."
+          echo "=== build/ directory contents ==="
           find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
-          if find build/ -name "dataapp*" -type f | grep -q .; then
+          echo "================================="
+          if find build/ -name "hello*" -type f | grep -q .; then
             echo "PASS: Build output found"
+            find build/ -name "hello*" -type f
           else
             echo "FAIL: Expected build output not found in build/"
             exit 1

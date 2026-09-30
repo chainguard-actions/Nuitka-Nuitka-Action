@@ -1,4 +1,4 @@
-name: Test Nuitka reporting options
+name: Test Nuitka build with version info and reporting inputs
 on:
   workflow_dispatch:
 jobs:
@@ -23,10 +23,10 @@ jobs:
       - name: Create simple Python script
         run: |
           cat > hello.py << 'EOF'
-          print("Hello reporting!")
+          print("Hello from Nuitka!")
           EOF
 
-      - name: Build with Nuitka (reporting options)
+      - name: Build with Nuitka (version info and reporting inputs)
         id: build
         uses: .
         with:
@@ -36,26 +36,41 @@ jobs:
           disable-cache: "true"
           assume-yes-for-downloads: "true"
           output-dir: build
-          report: "build/compilation-report.xml"
+          # Version information inputs
+          company-name: "TestCompany"
+          product-name: "TestProduct"
+          file-version: "1.0.0.0"
+          product-version: "1.0.0.0"
+          file-description: "Test binary"
+          copyright: "Copyright 2024 TestCompany"
+          trademarks: "TestTrademark"
+          # Reporting inputs
+          report: "nuitka-report.xml"
           report-diffable: "true"
           report-user-provided: "test-key=test-value"
           report-template: ""
-          show-scons: "true"
-          show-memory: "true"
+          # Tracing/output inputs
           quiet: ""
+          show-scons: ""
+          show-memory: ""
+          # Python flags
+          python-flag: "no_docstrings"
+          python-debug: ""
+          # Warning inputs
+          warn-implicit-exceptions: "true"
+          warn-unusual-code: "true"
+          nowarn-mnemonic: ""
 
-      - name: Assert build output and report exist
+      - name: Assert build output exists
         run: |
           echo "Checking for build output..."
+          echo "=== build/ directory contents ==="
           find build/ -type f 2>/dev/null || echo "build/ directory is empty or missing"
+          echo "================================="
           if find build/ -name "hello*" -type f | grep -q .; then
             echo "PASS: Build output found"
+            find build/ -name "hello*" -type f
           else
             echo "FAIL: Expected build output not found in build/"
             exit 1
-          fi
-          if [ -f "build/compilation-report.xml" ]; then
-            echo "PASS: Compilation report found"
-          else
-            echo "INFO: Compilation report not found (may not be supported in this version)"
           fi
