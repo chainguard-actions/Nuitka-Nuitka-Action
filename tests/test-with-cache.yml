@@ -1,0 +1,44 @@
+name: Test compilation with caching disabled (ccache mode)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Python
+        run: |
+          python --version
+          pip --version
+      - name: Install Python development headers
+        run: |
+          # Nuitka needs Python.h to compile C code
+          PYVER=$(python --version | awk '{print $2}' | cut -d'.' -f1,2)
+          echo "Python version: $PYVER"
+          sudo apt-get update -qq
+          sudo apt-get install -y "python${PYVER}-dev" || sudo apt-get install -y python3-dev
+      - id: action
+        uses: .
+        with:
+          script-name: tests/fixtures/hello.py
+          mode: accelerated
+          output-dir: build-cached
+          nuitka-version: main
+          assume-yes-for-downloads: true
+          # disable-cache=ccache skips the ccache apt-get install (fails in act)
+          # and the actions/cache step (also fails in act).
+          # The caching-key input is still exercised to verify it is accepted.
+          disable-cache: ccache
+          caching-key: test-cache-key
+          static-libpython: "no"
+      - name: Assert build output exists
+        run: |
+          echo "Checking build-cached directory..."
+          ls -la build-cached/ || true
+          if [ ! -d "build-cached" ]; then
+            echo "FAIL: build-cached directory was not created"
+            exit 1
+          fi
+          echo "Build directory contents:"
+          find build-cached -type f | head -20
+          echo "PASS: build with caching-key input accepted and build succeeded"

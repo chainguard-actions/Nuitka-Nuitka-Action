@@ -1,0 +1,48 @@
+name: Test working-directory input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Python
+        run: |
+          python --version
+          pip --version
+      - name: Install Python development headers
+        run: |
+          # Nuitka needs Python.h to compile C code
+          PYVER=$(python --version | awk '{print $2}' | cut -d'.' -f1,2)
+          echo "Python version: $PYVER"
+          sudo apt-get update -qq
+          sudo apt-get install -y "python${PYVER}-dev" || sudo apt-get install -y python3-dev
+      - name: Prepare working directory with script
+        run: |
+          mkdir -p tests/fixtures/workdir
+          cp tests/fixtures/hello.py tests/fixtures/workdir/hello.py
+      - id: action
+        uses: .
+        with:
+          # working-directory sets where nuitka runs from
+          working-directory: tests/fixtures/workdir
+          script-name: hello.py
+          mode: accelerated
+          output-dir: build
+          nuitka-version: main
+          assume-yes-for-downloads: true
+          # disable-cache=ccache skips both the ccache apt-get install step
+          # (which fails in act) and the actions/cache step
+          disable-cache: ccache
+          static-libpython: "no"
+      - name: Assert build output exists in working directory
+        run: |
+          echo "Checking build directory inside working directory..."
+          ls -la tests/fixtures/workdir/build/ || true
+          if [ ! -d "tests/fixtures/workdir/build" ]; then
+            echo "FAIL: build directory was not created inside working-directory"
+            exit 1
+          fi
+          echo "Build directory contents:"
+          find tests/fixtures/workdir/build -type f | head -20
+          echo "PASS: build with working-directory succeeded"

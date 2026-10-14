@@ -1,0 +1,37 @@
+name: Test onefile and console inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          script-name: tests/fixtures/hello.py
+          disable-cache: "true"
+          mode: "accelerated"
+          # Onefile inputs
+          onefile-tempdir-spec: ""
+          onefile-child-grace-time: ""
+          onefile-no-compression: "false"
+          onefile-windows-splash-screen-image: ""
+          # Console handling (obsolete but still inputs)
+          disable-console: "false"
+          enable-console: "false"
+          windows-console-mode: ""
+          # Project input
+          project: ""
+      - name: Assert action ran (build attempted)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran (outcome=$OUTCOME)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

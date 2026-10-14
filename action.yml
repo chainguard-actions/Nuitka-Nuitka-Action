@@ -1,0 +1,865 @@
+# yamllint disable rule:line-length
+# yamllint disable rule:comments
+# too many spelling things, spell-checker: disable
+name: Build executables or extension modules from Python projects
+branding:
+  icon: "package"
+  color: "blue"
+description: "Build a modules or standalone executable from python code using Nuitka on Mac/Linux/Windows. Very wide range of compatibility."
+inputs:
+  working-directory:
+    default: "."
+    description: "Directory to run nuitka in if not top level"
+  nuitka-version:
+    default: "main"
+    description: "Version of nuitka to use, branches, tags work"
+  ### Only Required Input ###
+  script-name:
+    required: true
+    description: "Path to python script that is to be built."
+  # Enable Nuitka Commercial features of Nuitka using a PAT (personal access token)
+  access-token:
+    description: "Github personal access token of an account authorized to access the Nuitka-commercial repo"
+  ### Nuitka Modes ###
+  mode:
+    description: |
+      Mode in which to compile. "accelerated" runs in your Python
+      installation and depends on it. "standalone" creates a folder
+      with an executable contained to run it. "onefile" creates a
+      single self extracting executable to deploy. "app" is "onefile"
+      except on macOS where it creates an app bundle. "app-dist" is
+      "standalone" except on macOS where it creates an app bundle.
+      "module" makes an extension module from a single module and
+      "package" compiles a whole package into an extension module.
+      "dll" is currently under development and not for users yet.
+      Default is 'accelerated'.
+    default: app
+  python-flag:
+    description: |
+      Python flags to use. Default is what you are using to run Nuitka, this
+      enforces a specific mode. These are options that also exist to standard
+      Python executable. Currently supported: "-S" (alias "no_site"),
+      "static_hashes" (do not use hash randomization), "no_warnings" (do not
+      give Python run time warnings), "-O" (alias "no_asserts"), "no_docstrings"
+      (do not use doc strings), "-u" (alias "unbuffered"), "isolated" (do not
+      load outside code), "-P" (alias "safe_path", do not used current directory
+      in module search) and "-m" (package mode, compile as "package.__main__").
+      Default empty.
+  python-debug:
+    description: |
+      Use debug version or not. Default uses what you are using to run Nuitka, most
+      likely a non-debug version. Only for debugging and testing purposes.
+  project:
+    description: |
+      Compile the project in the current directory by extracting configuration
+      from it. Default is not to use it.
+  ### Nuitka Plugins to enable. ###
+  enable-plugins:
+    description: |
+      Enabled plugins. Must be plug-in names. Use '--plugin-list' to query the
+      full list and exit. Default empty.
+  disable-plugins:
+    description: |
+      Disabled plugins. Must be plug-in names. Use '--plugin-list' to query the
+      full list and exit. Most standard plugins are not a good idea to disable.
+      Default empty.
+  user-plugin:
+    description: |
+      The file name of user plugin. Can be given multiple times. Default empty.
+  plugin-no-detection:
+    description: |
+      Plugins can detect if they might be used, and the you can disable the warning
+      via "--disable-plugin=plugin-that-warned", or you can use this option to disable
+      the mechanism entirely, which also speeds up compilation slightly of course as
+      this detection code is run in vain once you are certain of which plugins to
+      use. Defaults to off.
+  module-parameter:
+    description: |
+      Provide a module parameter. You are asked by some packages
+      to provide extra decisions. Format is currently
+      --module-parameter=module.name-option-name=value
+      Default empty.
+  ### Nuitka Tracing/Reporting features
+  report:
+    description: |
+      Report module, data files, compilation, plugin, etc. details in an XML output file. This
+      is also super useful for issue reporting. These reports can e.g. be used to re-create
+      the environment easily using it with '--create-environment-from-report', but contain a
+      lot of information. Default is off.
+  report-diffable:
+    description: |
+      Report data in diffable form, i.e. no timing or memory usage values that vary from run
+      to run. Default is off.
+  report-user-provided:
+    description: |
+      Report data from you. This can be given multiple times and be
+      anything in 'key=value' form, where key should be an identifier, e.g. use
+      '--report-user-provided=pipenv-lock-hash=64a5e4' to track some input values.
+      Default is empty.
+  report-template:
+    description: |
+      Report via template. Provide template and output filename 'template.rst.j2:output.rst'. For
+      built-in templates, check the User Manual for what these are. Can be given multiple times.
+      Default is empty.
+  quiet:
+    description: |
+      Disable all information outputs, but show warnings.
+      Defaults to off.
+  show-scons:
+    description: |
+      Run the C building backend Scons with verbose information, showing the executed commands,
+      detected compilers. Defaults to off.
+  show-memory:
+    description: |
+      Provide memory information and statistics.
+      Defaults to off.
+  ### Control the inclusion of data files in result. ###
+  include-package-data:
+    description: |
+      Include data files for the given package name. DLLs and extension modules
+      are not data files and never included like this. Can use patterns the
+      filenames as indicated below. Data files of packages are not included
+      by default, but package configuration can do it.
+      This will only include non-DLL, non-extension modules, i.e. actual data
+      files. After a ":" optionally a filename pattern can be given as
+      well, selecting only matching files. Examples:
+      "--include-package-data=package_name" (all files)
+      "--include-package-data=package_name:*.txt" (only certain type)
+      "--include-package-data=package_name:some_filename.dat (concrete file)
+      Default empty.
+  include-data-files:
+    description: |
+      Include data files by filenames in the distribution. There are many
+      allowed forms. With '--include-data-files=/path/to/file/*.txt=folder_name/some.txt' it
+      will copy a single file and complain if it's multiple. With
+      '--include-data-files=/path/to/files/*.txt=folder_name/' it will put
+      all matching files into that folder. For recursive copy there is a
+      form with 3 values that '--include-data-files=/path/to/scan=folder_name/=**/*.txt'
+      that will preserve directory structure. Default empty.
+  include-data-dir:
+    description: |
+      Include data files from complete directory in the distribution. This is
+      recursive. Check '--include-data-files' with patterns if you want non-recursive
+      inclusion. An example would be '--include-data-dir=/path/some_dir=data/some_dir'
+      for plain copy, of the whole directory. All non-code files are copied, if you
+      want to use '--noinclude-data-files' option to remove them. Default empty.
+  noinclude-data-files:
+    description: |
+      Do not include data files matching the filename pattern given. This is against
+      the target filename, not source paths. So to ignore a file pattern from package
+      data for 'package_name' should be matched as 'package_name/*.txt'. Or for the
+      whole directory simply use 'package_name'. Default empty.
+  include-data-files-external:
+    description: |
+      Include the specified data file patterns outside of the onefile binary,
+      rather than on the inside. First files have to be specified as included
+      with other `--include-*data*` options, and then this refers to target
+      paths inside the distribution that are then put external to it.
+      Default empty.
+  include-raw-dir:
+    description: |
+      Include raw directories completely in the distribution. This is
+      recursive. Check '--include-data-dir' to use the sane option.
+      Default empty.
+  ### Control the inclusion of modules and packages in result. ###
+  include-package:
+    description: 'Include a whole package. Give as a Python namespace, e.g. "some_package.sub_package" and Nuitka will then find it and include it and all the modules found below that disk location in the binary or extension module it creates, and make it available for import by the code. To avoid unwanted sub packages, e.g. tests you can e.g. do this "--nofollow-import-to=*.tests". Default empty.'
+  include-module:
+    description: 'Include a single module. Give as a Python namespace, e.g. "some_package.some_module" and Nuitka will then find it and include it in the binary or extension module it creates, and make it available for import by the code. Default empty.'
+  include-plugin-directory:
+    description: "Include the content of that directory, no matter if it is used by the given main program in a visible form. Overrides all other inclusion options. Can be given multiple times. Default empty."
+  include-plugin-files:
+    description: "Include into files matching the PATTERN. Overrides all other follow options. Can be given multiple times. Default empty."
+  prefer-source-code:
+    description: "For already compiled extension modules, where there is both a source file and an extension module, normally the extension module is used, but it should be better to compile the module from available source code for best performance. If not desired, there is --no- prefer-source-code to disable warnings about it. Default off."
+  nofollow-import-to:
+    description: "Do not follow to that module name even if used, or if a package name, to the whole package in any case, overrides all other options. Can be given multiple times. Default empty."
+  user-package-configuration-file:
+    description: "User provided YAML file with package configuration. You can include DLLs, remove bloat, add hidden dependencies. Check User Manual for a complete description of the format to use. Can be given multiple times. Defaults to empty."
+  ### Control the inclusion of DLL files in result. ###
+  noinclude-dlls:
+    description: |
+      Do not include DLL files matching the filename pattern given. This is against
+      the target filename, not source paths. So ignore a DLL 'someDLL' contained in
+      the package 'package_name' it should be matched as 'package_name/someDLL.*'.
+      Default empty.
+  include-windows-runtime-dlls:
+    description: |
+      Include the Windows C runtime DLLs in the distribution. For onefile, this also
+      enables static linking of the bootstrap binary. Defaults to 'auto', which
+      includes them if found.
+  ### Environment control ###
+  force-runtime-environment-variable:
+    description: |
+      Force an environment variables to a given value. Default empty.
+  ### Onefile behavior details ###
+  onefile-tempdir-spec:
+    description: "Use this as a folder to unpack onefile. Defaults to '%TEMP%\\onefile_%PID%_%TIME%', but e.g. '%CACHE_DIR%/%COMPANY%/%PRODUCT%/%VERSION%' would be cached and good too."
+  onefile-child-grace-time:
+    description: "When stopping the child, e.g. due to CTRL-C or shutdown, how much time to allow before killing it the hard way. Unit is ms. Default 5000."
+  onefile-no-compression:
+    description: "When creating the onefile, disable compression of the payload. Default is false."
+  warn-implicit-exceptions:
+    description: |
+      Enable warnings for implicit exceptions detected at compile time.
+  warn-unusual-code:
+    description: |
+      Enable warnings for unusual code detected at compile time.
+  assume-yes-for-downloads:
+    description: |
+      Allow Nuitka to download external code if necessary, e.g. dependency
+      walker, ccache, and even gcc on Windows. To disable, redirect input
+      from nul device, e.g. "</dev/null" or "<NUL:". Default is to prompt.
+    default: true
+  update-check:
+    description: |
+      Control checking for newer Nuitka releases. Use "never" to disable it,
+      "force" to bypass the cache once, "error" to make outdated versions abort,
+      "warning" (default) to warn, or "info" to merely inform. This can also be
+      controlled with the environment variable 'NUITKA_UPDATE_CHECK'.
+  nowarn-mnemonic:
+    description: |
+      Disable warning for a given mnemonic. These are given to make sure you are aware of
+      certain topics, and typically point to the Nuitka website. The mnemonic is the part
+      of the URL at the end, without the HTML suffix. Can be given multiple times and
+      accepts shell pattern. Default empty.
+  ### Deployment modes ###
+  deployment:
+    description: |
+      Disable code aimed at making finding compatibility issues easier. This
+      will e.g. prevent execution with "-c" argument, which is often used by
+      code that attempts run a module, and causes a program to start itself
+      over and over potentially. Disable once you deploy to end users, for
+      finding typical issues, this is very helpful during development. Default
+      off.
+  no-deployment-flag:
+    description: |
+      Keep deployment mode, but disable selectively parts of it. Errors from
+      deployment mode will output these identifiers. Default empty.
+  ### Output choices ##
+  output-dir:
+    description: "Directory for output builds"
+    default: build
+  output-file:
+    description: "Specify how the executable should be named. For extension modules there is no choice, also not for standalone mode and using it will be an error. This may include path information that needs to exist though. Defaults to '<program_name>' on this platform. .exe)"
+  ### Console handling ###
+  disable-console:
+    description: "Obsolete as of Nuitka 2.3: When compiling for Windows or macOS, disable the console window and create a GUI application. Defaults to false."
+  enable-console:
+    description: "Obsolete as of Nuitka 2.3: When compiling for Windows or macOS, enable the console window and create a GUI application. Defaults to false and tells Nuitka your choice is intentional."
+  ### Version information ###
+  company-name:
+    description: |
+      Name of the company to use in version information. Defaults to unused.
+  product-name:
+    description: |
+      Name of the product to use in version information. Defaults to base filename of the binary.
+  file-version:
+    description: |
+      File version to use in version information. Must be a sequence of up to 4
+      numbers, e.g. 1.0 or 1.0.0.0, no more digits are allowed, no strings are
+      allowed. Defaults to unused.
+  product-version:
+    description: |
+      Product version to use in version information. Same rules as for file version.
+      Defaults to unused.
+  file-description:
+    description: |
+      Description of the file used in version information. On Windows, it is mandatory and
+      defaults to the binary filename. On Linux app mode, it is used as the summary of the
+      AppStream metadata. Defaults to unused.
+  copyright:
+    description: |
+      Copyright used in version information. Windows/macOS only at this time. Defaults to not present.
+  trademarks:
+    description: |
+      Trademark used in version information. Windows/macOS only at this time. Defaults to not present.
+  ### Installer creation ###
+  macos-create-installer:
+    description: |
+      When compiling for macOS, create a DMG file for the application bundle.
+      Defaults to off.
+  macos-installer-output:
+    description: |
+      Filename of the DMG file to create. Defaults to the app bundle name with a ".dmg" suffix next to the application bundle.
+  windows-create-installer:
+    description: |
+      Create a Windows installer (NSIS) for the compiled standalone or onefile result. If not given, no installer is created.
+  windows-nsis-path:
+    description: |
+      The installer backend tool to use, or the directory it lives in. By default it is searched in 'PATH', and then a cached download of the official upstream release is used.
+  windows-installer-output:
+    description: |
+      Filename of the installer executable to create. Defaults to the program or dist folder name with a "-setup.exe" suffix in the output directory.
+  windows-installer-install-dir:
+    description: |
+      Default installation directory presented to the end user, backend specific values like "$PROGRAMFILES64\ProductName" are allowed. Defaults to a standard location derived from the product name and install mode.
+  windows-installer-shortcuts:
+    description: |
+      Comma separated list of shortcuts the installer offers, allowed values are "desktop" and "start-menu". Default is no shortcuts.
+  windows-installer-license-file:
+    description: |
+      License text file the installer shall present during installation. Default is to have no license page.
+  windows-installer-no-user-change-install-dir:
+    description: |
+      Do not allow the end user to override the default installation directory. Default is to allow it.
+  windows-installer-mode:
+    description: |
+      Installation scope. "multiuser" lets the end user choose between per-user and all-users (default), "user" forces a per-user install with no UAC prompt, "machine" forces an all-users install requiring admin elevation.
+  linux-create-installer:
+    description: |
+      Create a Linux AppImage installer for the compiled standalone or onefile result. If not given, no installer is created.
+  linux-installer-appimagetool-path:
+    description: |
+      The appimagetool binary to use or the directory it lives in. By default it is searched in 'PATH', and then a cached download of the official upstream release is used.
+  linux-installer-output:
+    description: |
+      Filename of the AppImage to create. Defaults to the dist folder name with an architecture suffix and '.AppImage' extension in the output directory.
+  ### General OS controls ###
+  force-stdout-spec:
+    description: |
+      Force standard output of the program to go to this location. Useful for programs with
+      disabled console and programs using the Windows Services Plugin of Nuitka commercial.
+      Defaults to not active, use e.g. '{PROGRAM_BASE}.out.txt', i.e. file near your program,
+      check User Manual for full list of available values.
+  force-stderr-spec:
+    description: |
+      Force standard error of the program to go to this location. Useful for programs with
+      disabled console and programs using the Windows Services Plugin of Nuitka commercial.
+      Defaults to not active, use e.g. '{PROGRAM_BASE}.err.txt', i.e. file near your program,
+      check User Manual for full list of available values.
+  ### Windows specific controls ###
+  windows-console-mode:
+    description: |
+      Select console mode to use. Default mode is 'force' and creates a
+      console window unless the program was started from one. With 'disable'
+      it doesn't create or use a console at all. With 'attach' an existing
+      console will be used for outputs. With 'hide' a newly spawned console
+      will be hidden and an already existing console will behave like
+      'force'. Default is 'force'.
+  windows-icon-from-ico:
+    description: |
+      Add executable icon. Can be given multiple times for different resolutions
+      or files with multiple icons inside. In the later case, you may also suffix
+      with #<n> where n is an integer index starting from 1, specifying a specific
+      icon to be included, and all others to be ignored.
+  windows-icon-from-exe:
+    description: |
+      Copy executable icons from this existing executable (Windows only).
+  onefile-windows-splash-screen-image:
+    description: |
+      When compiling for Windows and onefile, show this while loading the application. Defaults to off.
+      Setting the environment variable 'NUITKA_SPLASH_SCREEN' to "0" or "off" hides the splash screen at
+      runtime, e.g. for automated tests.
+  windows-uac-admin:
+    description: |
+      Request Windows User Control, to grant admin rights on execution. (Windows only). Defaults to off.
+  windows-uac-uiaccess:
+    description: |
+      Request Windows User Control, to enforce running from a few folders only, remote
+      desktop access. (Windows only). Defaults to off.
+  ### macOS specific controls: ###
+  macos-app-console-mode:
+    description: |
+      Select console mode to use. Default mode is 'disable' and creates no
+      console window. With 'force' it will create a console window when
+      launched from Finder. Default is 'disable'.
+  macos-target-arch:
+    description: |
+      What architecture is this supposed to run on. Default and limit
+      is what the running Python allows for. Default is "native" which is
+      the architecture the Python is run with.
+  macos-app-icon:
+    description: |
+      Add icon for the application bundle to use. Can be given only one time. Defaults to Python icon if available.
+  macos-signed-app-name:
+    description: |
+      Name of the application to use for macOS signing. Follow "com.YourCompany.AppName"
+      naming results for best results, as these have to be globally unique, and will
+      potentially grant protected API accesses.
+  macos-app-name:
+    description: |
+      Name of the product to use in macOS bundle information. Defaults to base
+      filename of the binary.
+  macos-app-mode:
+    description: |
+      Mode of application for the application bundle. When launching a Window, and appearing
+      in the dock is desired, default value "gui" is a good fit. Without a Window ever, the
+      application is a "background" application. For UI elements that get to display later,
+      "ui-element" is in-between. The application will not appear in the dock, but get full
+      access to desktop when it does open a Window later.
+  macos-prohibit-multiple-instances:
+    description: |
+      For application bundles, set the flag "LSMultipleInstancesProhibited" to prevent
+      launching multiple instances of the application. Default is off.
+  macos-sign-identity:
+    description: |
+      When signing on macOS, by default an ad-hoc identify will be used, but with this
+      option your get to specify another identity to use. The signing of code is now
+      mandatory on macOS and cannot be disabled. Use "auto" to detect your only identity
+      installed. Default "ad-hoc" if not given.
+  macos-sign-notarization:
+    description: |
+      When signing for notarization, using a proper TeamID identity from Apple, use
+      the required runtime signing option, such that it can be accepted.
+  macos-app-version:
+    description: |
+      Product version to use in macOS bundle information. Defaults to "1.0" if
+      not given.
+  macos-app-macos-min-version:
+    description: |
+      Minimum macOS version required by the application. Defaults to the
+      version detected from the Python binary used.
+  macos-app-category-type:
+    description: |
+      App Store category type for the application, e.g.
+      public.app-category.utilities.
+  macos-app-protected-resource:
+    description: |
+      Request an entitlement for access to a macOS protected resources, e.g.
+      "NSMicrophoneUsageDescription:Microphone access for recording audio."
+      requests access to the microphone and provides an informative text for
+      the user, why that is needed. Before the colon, is an OS identifier for
+      an access right, then the informative text. Legal values can be found on
+      https://developer.apple.com/documentation/bundleresources/information_property_list/protected_resources
+      and the option can be specified multiple times. Default empty.
+  macos-sign-keyring-filename:
+    description: |
+      Path to the certificate file to be used for macOS code signing.
+      This is used in conjunction with '--macos-sign-identity'. Default empty.
+  macos-sign-keyring-password:
+    description: |
+      Password for the certificate file provided via
+      '--macos-sign-keyring-filename'. Default empty.
+  ### Linux specific controls: ###
+  linux-app-icon:
+    description: |
+      Add executable icon for the Linux desktop file to use. Can be given
+      only one time. Defaults to Python icon if available. Note that the
+      desktop file references the icon by name only, it will not display
+      unless the icon file is also installed into the system icon paths,
+      e.g. '/usr/share/icons/hicolor/' or '~/.local/share/icons/'.
+  linux-app-console-mode:
+    description: |
+      Select console mode to use with the Linux desktop file. Default mode
+      is 'disable' and the 'Terminal' entry makes it launch without a
+      terminal. With 'force' a terminal is opened when launched from the
+      desktop environment. Default is 'disable'.
+  linux-app-license:
+    description: |
+      SPDX license expression of the application used in the AppStream
+      metainfo file created on Linux, e.g. 'Apache-2.0'. Defaults
+      to 'Proprietary'.
+  ### Backend C compiler choices. ###
+  clang:
+    description: |
+      Enforce the use of clang. On Windows this requires a working Visual
+      Studio version to piggy back on. Defaults to off.
+  mingw64:
+    description: |
+      Enforce the use of MinGW64 on Windows. Defaults to off unless MSYS2 with MinGW Python is used.
+  zig:
+    description: |
+      Enforce usage of Zig on for C compilation. Defaults to off.
+  msvc:
+    description: |
+      Enforce the use of specific MSVC version on Windows. Allowed values
+      are e.g. "14.3" (MSVC 2022) and other MSVC version numbers, specify
+      "list" for a list of installed compilers, or use "latest".
+
+      Defaults to latest MSVC being used if installed, otherwise MinGW64
+      is used.
+  jobs:
+    description: |
+      Specify the allowed number of parallel C compiler jobs. Negative values
+      are system CPU minus the given value. Defaults to the full system CPU
+      count unless low memory mode is activated, then it defaults to 1.
+  reproducible:
+    description: |
+      Enable reproducible builds. Allowed values are "yes", "no", and "auto"
+      (where it's "no" on Windows and "yes" otherwise). Defaults to "auto".
+  lto:
+    description: |
+      Use link time optimizations (MSVC, gcc, clang). Allowed values are
+      "yes", "no", and "auto" (when it's known to work). Defaults to
+      "auto".
+  static-libpython:
+    description: |
+      Use static link library of Python. Allowed values are "yes", "no",
+      and "auto" (when it's known to work). Defaults to "auto".
+  cf-protection:
+    description: |
+      This option is gcc specific. For the gcc compiler, select the
+      "cf-protection" mode. Default "auto" is to use the gcc default
+      value, but you can override it, e.g. to disable it with "none"
+      value. Refer to gcc documentation for "-fcf-protection" for the
+      details.
+  target-arch:
+    description: |
+      What minimum CPU instruction set to compile for. This is NOT about
+      cross-compilation (which requires Python of that architecture). It
+      controls the baseline ISA level for the backend C compiler via
+      '-march'. When not given, gcc and clang use their default (already
+      portable), and zig defaults to the baseline ISA for the target
+      architecture (e.g. "x86_64" on x86_64, "armv8-a" on arm64) to
+      produce portable binaries. Set to an explicit value like
+      "x86-64-v3" to require a higher ISA level. Check compiler docs
+      for allowed values. If you choose wrong, build errors will occur.
+  ### Debug features. ###
+  debug:
+    description: |
+      Executing all self checks possible to find errors in Nuitka, do not use for
+      production. Defaults to off.
+  debug-self-forking:
+    description: |
+      For fork bombs, debug what Nuitka does when it encounters a relaunch of itself.
+      Defaults to off.
+  debug-address-sanitizer:
+    description: |
+      Compile and link with AddressSanitizer instrumentation, if the C compiler
+      supports it. Known to work with GCC and Clang. This implies keeping debug
+      information. Leak detection is disabled by default for the compiled program,
+      since Python and third party libraries intend to leak a lot, but it can be
+      enabled with "ASAN_OPTIONS=detect_leaks=1" if wanted. Defaults to off.
+  no-debug-immortal-assumptions:
+    description: |
+      Disable check normally done with "--debug". With Python3.12+ do not check known
+      immortal object assumptions. Some C libraries corrupt them. Defaults to check
+      being made if "--debug" is on.
+  no-debug-c-warnings:
+    description: |
+      Disable check normally done with "--debug". The C compilation may produce
+      warnings, which it often does for some packages without these being issues,
+      esp. for unused values.
+  unstripped:
+    description: |
+      Keep debug info in the resulting object file for better debugger interaction.
+      Defaults to off.
+  trace-execution:
+    description: |
+      Traced execution output, output the line of code before executing it.
+      Defaults to off.
+  xml:
+    description: |
+      Write the internal program structure, result of optimization in XML form to given filename.
+  experimental:
+    description: |
+      Use features declared as 'experimental'. May have no effect if no experimental
+      features are present in the code. Uses secret tags (check source) per
+      experimented feature.
+  low-memory:
+    description: |
+      Attempt to use less memory, by forking less C compilation jobs and using
+      options that use less memory. For use on embedded machines. Use this in
+      case of out of memory problems. Defaults to off.
+  ### Plugin options of 'automatic-updates' (categories: commercial, feature) ###
+  auto-update-url-spec:
+    description: |
+      URL to check for automatic updates. Default empty, i.e. not updates.
+  auto-update-debug:
+    description: |
+      Debug automatic updates at runtime printing messages. Default False.
+  auto-update-toml-file:
+    description: |
+      Path to generate a TOML update config for the compiled binary. Default empty, i.e. do not generate.
+  ### Plugin options of 'windows-service' (categories: commercial, feature) ###
+  windows-service-name:
+    description: |
+      The Windows service name.
+  windows-service-grace-time:
+    description: |
+      For shutdown, wait this extra time before killing. Unit is ms, and default is 2000,
+      i.e. it waits 2 seconds to allow cleanup. Increase if you need more time, decrease
+      if you want faster service shutdown.
+  windows-service-start-mode:
+    description: |
+      Pick the service start mode, value "auto" starts automatically at
+      reboot without login, "demand" (default) must be started manually,
+      and "disabled" cannot be started, requires further action to
+      change it.
+  windows-service-cli:
+    description: |
+      Should the program allow to be ran from the command line. By default
+      it does not and only outputs a message it is disallowed.
+  ### Plugin options of 'esigner' (categories: commercial, integration, signing) ###
+  esigner-sign-deep:
+    description: |
+      Also sign included DLLs (shared libraries) and extension modules in the distribution.
+      Use with care, as this may break some things.
+  esigner-disable-signing-cache:
+    description: |
+      Disable usage of the hashing based signing cache. This will make deep signing
+      much slower.
+  esigner-tool-path:
+    description: |
+      Path to the 'CodeSignTool' executable/batch file provided by SSL.com.
+  esigner-username:
+    description: |
+      SSL.com username.
+  esigner-password:
+    description: |
+      SSL.com password.
+  esigner-credential-id:
+    description: |
+      Credential ID for the signing certificate.
+  esigner-totp-secret:
+    description: |
+      TOTP secret for the signing account (static secret).
+  ### Plugin options of 'signtool' (categories: commercial, integration, signing) ###
+  windows-sign-deep:
+    description: |
+      Also sign included DLLs (shared libraries) and extension modules in the distribution.
+      Use with care, as this may break some things.
+  windows-disable-signing-cache:
+    description: |
+      Disable usage of the hashing based signing cache. This will make deep signing
+      much slower.
+  windows-signing-tool-path:
+    description: |
+      The 'signtool' executable. You may make this a wrapper script should you want very
+      specific options, by default `signtool` from PATH or used MSVC used is used.
+  windows-certificate-name:
+    description: |
+      Name of the certificate to use. This will be used to sign the binary.
+  windows-certificate-sha1:
+    description: |
+      Checksum of the certificate to use. This will be used to sign the binary.
+  windows-certificate-filename:
+    description: |
+      Filename of the certificate, typically a ".pfx" file. This will be used to sign
+      the binary.
+  windows-certificate-password:
+    description: |
+      Password of the certificate filename used. Defaults to empty, must be
+      provided to successfully sign if certificate the file has one.
+  windows-signed-content-comment:
+    description: |
+      Comment to be used for the signed comments. Optional, defaults to not given.
+  ### Plugin options of 'anti-debugger' (categories: commercial, protection) ###
+  anti-debugger-debugging:
+    description: |
+      Enables debug outputs for the debugger plugin, so that it e.g. says
+      why it rejects something.
+  ### Plugin options of 'codemeter' (categories: commercial, protection) ###
+  codemeter-path:
+    description: |
+      The location of the CodeMeter / AxProtector installation, by default it is
+      searched in common install paths and in PATH.
+  codemeter-command:
+    description: |
+      The CodeMeter protection tool executable name. By default AxProtectorCmd.exe
+      is searched.
+  codemeter-args:
+    description: |
+      Extra command-line arguments passed to the CodeMeter protection tool.
+      These may contain references to project configuration files, input and
+      output filenames, or other protection options.
+  codemeter-keep-unprotected:
+    description: |
+      Keep the unprotected version of the Nuitka compiled binary.
+  ### Plugin options of 'data-hiding' (categories: commercial, protection) ###
+  data-hiding-salt-value:
+    description: |
+      Salt value to make encryption result unique.
+  ### Plugin options of 'datafile-inclusion-ng' (categories: commercial, protection) ###
+  embed-data-files-compile-time-pattern:
+    description: |
+      Pattern of data files to embed for use during compile time. These should
+      match target filenames.
+  embed-data-files-run-time-pattern:
+    description: |
+      Pattern of data files to embed for use during run time. These should
+      match target filenames.
+  embed-data-files-qt-resource-pattern:
+    description: |
+      Pattern of data files to embed for use with Qt at run time. These should
+      match target filenames.
+  embed-debug-qt-resources:
+    description: |
+      For debugging purposes, print out information for Qt resources not found.
+  ### Plugin options of 'dll-embedding' (categories: commercial, protection) ###
+  embed-dll-pattern:
+    description: |
+      Pattern of DLLs to embed (glob style). Matches against the destination path
+      (e.g. package/ext.pyd or library.dll).
+  ### Plugin options of 'traceback-encryption' (categories: commercial, protection) ###
+  encryption-key:
+    description: |
+      The encryption key to use.
+  encrypt-stdout:
+    description: |
+      Apply encryption to standard output.
+  encrypt-stderr:
+    description: |
+      Apply encryption to standard error.
+  encrypt-debug-init:
+    description: |
+      In case the encryption fails to install, do not abort, but run normally and trace error unencrypted.
+  obfuscate-line-numbers:
+    description: |
+      Obfuscate source line numbers in the generated code. In 'original' mode, line
+      numbers are kept as-is. In 'removed' mode, all line numbers become constant
+      '1'. In 'encrypted' mode, line numbers are replaced with deterministic
+      encrypted values via a per-source-file shuffle,
+      and a reverse mapping is written to a '<result>.secrets' directory for use in
+      bug report analysis. Only generated code uses these values, compile time
+      errors and reports keep the original line numbers. Module code objects use
+      line number '1' in both modes since obfuscating them provides no protection.
+  private-import-patterns:
+    description: |
+      Shell pattern of module names to treat as private hard imports. Matching
+      modules are compiled as dynamic hard imports and hidden from sys.modules.
+      Can be given multiple times.
+  ### Plugin options of 'source-inclusion' (categories: feature, package-support) ###
+  source-inclusion-args:
+    description: |
+      Run the program being compiled during compilation with this shell-style
+      argument list while recording looked up source files. Repeat for every
+      additional probe run, e.g. '--source-inclusion-args="subcommand --help"'.
+  source-inclusion-timeout:
+    description: |
+      Timeout in seconds for each probe run. Defaults to no timeout, so a probe run that hangs is seen rather than silently cut short.
+  show-source-inclusion-trace:
+    description: |
+      Display the recorded source inclusion modules from the probe run.
+  ### Plugin options of 'upx' (categories: integration) ###
+  upx-binary:
+    description: |
+      The UPX binary to use or the directory it lives in, by default `upx` from PATH is used.
+  upx-disable-cache:
+    description: |
+      Do not cache UPX compression result, by default DLLs are cached, exe files are not.
+  ### Plugin options of 'dill-compat' (categories: package-support) ###
+  include-pickle-support-module:
+    description: |
+      Include support for these modules to pickle nested compiled functions. You
+      can use "all" which is the default, but esp. in module mode, just might
+      want to limit yourself to not create unnecessary run-time usages. For
+      standalone mode, you can leave it at the default, at it will detect
+      the usage.
+  ### Plugin options of 'pmw-freezer' (categories: package-support) ###
+  include-pmw-blt:
+    description: |
+      Should 'Pmw.Blt' not be included, Default is to include it.
+  include-pmw-color:
+    description: |
+      Should 'Pmw.Color' not be included, Default is to include it.
+  ### Plugin options of 'tk-inter' (categories: package-support) ###
+  tk-library-dir:
+    description: |
+      The Tk library dir. Nuitka is supposed to automatically detect it, but you can
+      override it here. Default is automatic detection.
+  tcl-library-dir:
+    description: |
+      The Tcl library dir. See comments for Tk library dir.
+  ### Plugin options of 'torch-hub' (categories: package-support) ###
+  torch-hub-model:
+    description: |
+      Specify a Torch Hub model to scan for hidden imports. Use the form
+      'REPO_OR_DIR=MODEL', e.g. 'ultralytics/yolov5=yolov5s'. The repository part
+      may also be a local directory containing a 'hubconf.py'. Repeat this option
+      for multiple models. [REQUIRED]
+  ### Plugin options of 'pyside6' (same for 'pyside2', 'pyqt6', 'pyqt5' plugins) (categories: package-support, qt-binding) ###
+  include-qt-plugins:
+    description: |
+      Which Qt plugins to include. These can be big with dependencies, so
+      by default only the "sensible" ones are included, but you can also put
+      "all" or list them individually. If you specify something that does
+      not exist, a list of all available will be given.
+  noinclude-qt-plugins:
+    description: |
+      Which Qt plugins to not include. This removes things, so you can
+      ask to include "all" and selectively remove from there, or even
+      from the default sensible list.
+  noinclude-qt-translations:
+    description: |
+      Include Qt translations with QtWebEngine if used. These can be a lot
+      of files that you may not want to be included.
+  qt-debug-plugins:
+    description: |
+      Sets the "QT_DEBUG_PLUGINS" environment variable to "1" in the
+      created standalone, so you can debug what plugin loading issues
+      there might be.
+  ### Action controls ###
+  disable-cache:
+    description: "Disables caching of compiled binaries. Defaults to false."
+  caching-key:
+    description: "An optional string to make the Nuitka build cache key more specific. This can be used for manual cache invalidation or to segment caches based on custom criteria. This key itself is not passed to Nuitka."
+    required: false
+    default: "caching"
+runs:
+  using: "composite"
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    - name: Setup Environment Variables
+      if: ${{ !inputs.disable-cache }}
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        safe_action_path=$(printf '%s' "$ACTION_PATH" | tr -d '\n\r')
+        echo "NUITKA_CACHE_DIR=${safe_action_path}/nuitka/cache" >> $GITHUB_ENV
+        echo "PYTHON_VERSION=$(python --version | awk '{print $2}' | cut -d '.' -f 1,2)" >> $GITHUB_ENV
+    - name: Install Dependencies
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        ACCESS_TOKEN: ${{ inputs.access-token }}
+        NUITKA_VERSION: ${{ inputs.nuitka-version }}
+      run: |
+        pip install -r "$ACTION_PATH/requirements.txt"
+
+        # With commercial access token, use that repository.
+        if [ "$ACCESS_TOKEN" != "" ]; then
+          repo_url="git+https://$ACCESS_TOKEN@github.com/Nuitka/Nuitka-commercial.git"
+        else
+          repo_url="git+https://$@github.com/Nuitka/Nuitka.git"
+        fi
+
+        pip install "${repo_url}/@$NUITKA_VERSION#egg=nuitka"
+    - name: Install ccache
+      # TODO: Proper "in" test could make sense here.
+      if: ${{ inputs.disable-cache != 'ccache' && runner.os == 'Linux' }}
+      shell: bash
+      run: |
+        sudo apt-get install -y ccache
+    - name: Cache Nuitka cache directory
+      if: ${{ !inputs.disable-cache }}
+      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      with:
+        path: ${{ env.NUITKA_CACHE_DIR }}
+        key: nuitka-${{ inputs.caching-key }}-${{ runner.os }}-${{ runner.arch }}-python-${{ env.PYTHON_VERSION }}-nuitka-${{ github.sha }}
+        restore-keys: |
+          nuitka-${{ inputs.caching-key }}-${{ runner.os }}-${{ runner.arch }}-python-${{ env.PYTHON_VERSION }}-
+          nuitka-${{ inputs.caching-key }}-${{ runner.os }}-${{ runner.arch }}-
+    - name: Build with Nuitka
+      shell: bash
+      env:
+        PYTHONUTF8: 1
+        NUITKA_WORKFLOW_INPUTS_JSON: ${{ toJson(inputs) }}
+      run: |
+        set -e
+
+        # Prepare the JSON string for Nuitka, filtering out action-specific keys using Python
+        NUITKA_WORKFLOW_INPUTS=$(printf '%s' "$NUITKA_WORKFLOW_INPUTS_JSON" | python -c "import sys, json; data = json.load(sys.stdin); [data.pop(k, None) for k in ['nuitka-version', 'working-directory', 'access-token', 'disable-cache', 'caching-key']]; json.dump(data, sys.stdout, ensure_ascii=False)")
+
+        # Pass the filtered JSON to Nuitka via an environment variable
+        export NUITKA_WORKFLOW_INPUTS
+        python -m nuitka --github-workflow-options
+      working-directory: ${{ inputs.working-directory }}
