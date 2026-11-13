@@ -1,25 +1,33 @@
 # yamllint disable rule:line-length
 # yamllint disable rule:comments
 # too many spelling things, spell-checker: disable
+---
 name: Build executables or extension modules from Python projects
+
 branding:
   icon: "package"
   color: "blue"
+
 description: "Build a modules or standalone executable from python code using Nuitka on Mac/Linux/Windows. Very wide range of compatibility."
+
 inputs:
   working-directory:
     default: "."
     description: "Directory to run nuitka in if not top level"
+
   nuitka-version:
     default: "main"
     description: "Version of nuitka to use, branches, tags work"
+
   ### Only Required Input ###
   script-name:
     required: true
     description: "Path to python script that is to be built."
+
   # Enable Nuitka Commercial features of Nuitka using a PAT (personal access token)
   access-token:
     description: "Github personal access token of an account authorized to access the Nuitka-commercial repo"
+
   ### Nuitka Modes ###
   mode:
     description: |
@@ -53,6 +61,7 @@ inputs:
     description: |
       Compile the project in the current directory by extracting configuration
       from it. Default is not to use it.
+
   ### Nuitka Plugins to enable. ###
   enable-plugins:
     description: |
@@ -79,6 +88,7 @@ inputs:
       to provide extra decisions. Format is currently
       --module-parameter=module.name-option-name=value
       Default empty.
+
   ### Nuitka Tracing/Reporting features
   report:
     description: |
@@ -113,6 +123,7 @@ inputs:
     description: |
       Provide memory information and statistics.
       Defaults to off.
+
   ### Control the inclusion of data files in result. ###
   include-package-data:
     description: |
@@ -161,6 +172,7 @@ inputs:
       Include raw directories completely in the distribution. This is
       recursive. Check '--include-data-dir' to use the sane option.
       Default empty.
+
   ### Control the inclusion of modules and packages in result. ###
   include-package:
     description: 'Include a whole package. Give as a Python namespace, e.g. "some_package.sub_package" and Nuitka will then find it and include it and all the modules found below that disk location in the binary or extension module it creates, and make it available for import by the code. To avoid unwanted sub packages, e.g. tests you can e.g. do this "--nofollow-import-to=*.tests". Default empty.'
@@ -176,6 +188,7 @@ inputs:
     description: "Do not follow to that module name even if used, or if a package name, to the whole package in any case, overrides all other options. Can be given multiple times. Default empty."
   user-package-configuration-file:
     description: "User provided YAML file with package configuration. You can include DLLs, remove bloat, add hidden dependencies. Check User Manual for a complete description of the format to use. Can be given multiple times. Defaults to empty."
+
   ### Control the inclusion of DLL files in result. ###
   noinclude-dlls:
     description: |
@@ -188,10 +201,12 @@ inputs:
       Include the Windows C runtime DLLs in the distribution. For onefile, this also
       enables static linking of the bootstrap binary. Defaults to 'auto', which
       includes them if found.
+
   ### Environment control ###
   force-runtime-environment-variable:
     description: |
       Force an environment variables to a given value. Default empty.
+
   ### Onefile behavior details ###
   onefile-tempdir-spec:
     description: "Use this as a folder to unpack onefile. Defaults to '%TEMP%\\onefile_%PID%_%TIME%', but e.g. '%CACHE_DIR%/%COMPANY%/%PRODUCT%/%VERSION%' would be cached and good too."
@@ -199,6 +214,7 @@ inputs:
     description: "When stopping the child, e.g. due to CTRL-C or shutdown, how much time to allow before killing it the hard way. Unit is ms. Default 5000."
   onefile-no-compression:
     description: "When creating the onefile, disable compression of the payload. Default is false."
+
   warn-implicit-exceptions:
     description: |
       Enable warnings for implicit exceptions detected at compile time.
@@ -223,6 +239,7 @@ inputs:
       certain topics, and typically point to the Nuitka website. The mnemonic is the part
       of the URL at the end, without the HTML suffix. Can be given multiple times and
       accepts shell pattern. Default empty.
+
   ### Deployment modes ###
   deployment:
     description: |
@@ -236,17 +253,20 @@ inputs:
     description: |
       Keep deployment mode, but disable selectively parts of it. Errors from
       deployment mode will output these identifiers. Default empty.
+
   ### Output choices ##
   output-dir:
     description: "Directory for output builds"
     default: build
   output-file:
     description: "Specify how the executable should be named. For extension modules there is no choice, also not for standalone mode and using it will be an error. This may include path information that needs to exist though. Defaults to '<program_name>' on this platform. .exe)"
+
   ### Console handling ###
   disable-console:
     description: "Obsolete as of Nuitka 2.3: When compiling for Windows or macOS, disable the console window and create a GUI application. Defaults to false."
   enable-console:
     description: "Obsolete as of Nuitka 2.3: When compiling for Windows or macOS, enable the console window and create a GUI application. Defaults to false and tells Nuitka your choice is intentional."
+
   ### Version information ###
   company-name:
     description: |
@@ -274,6 +294,7 @@ inputs:
   trademarks:
     description: |
       Trademark used in version information. Windows/macOS only at this time. Defaults to not present.
+
   ### Installer creation ###
   macos-create-installer:
     description: |
@@ -315,6 +336,7 @@ inputs:
   linux-installer-output:
     description: |
       Filename of the AppImage to create. Defaults to the dist folder name with an architecture suffix and '.AppImage' extension in the output directory.
+
   ### General OS controls ###
   force-stdout-spec:
     description: |
@@ -328,6 +350,7 @@ inputs:
       disabled console and programs using the Windows Services Plugin of Nuitka commercial.
       Defaults to not active, use e.g. '{PROGRAM_BASE}.err.txt', i.e. file near your program,
       check User Manual for full list of available values.
+
   ### Windows specific controls ###
   windows-console-mode:
     description: |
@@ -358,6 +381,7 @@ inputs:
     description: |
       Request Windows User Control, to enforce running from a few folders only, remote
       desktop access. (Windows only). Defaults to off.
+
   ### macOS specific controls: ###
   macos-app-console-mode:
     description: |
@@ -431,6 +455,7 @@ inputs:
     description: |
       Password for the certificate file provided via
       '--macos-sign-keyring-filename'. Default empty.
+
   ### Linux specific controls: ###
   linux-app-icon:
     description: |
@@ -450,6 +475,8 @@ inputs:
       SPDX license expression of the application used in the AppStream
       metainfo file created on Linux, e.g. 'Apache-2.0'. Defaults
       to 'Proprietary'.
+
+
   ### Backend C compiler choices. ###
   clang:
     description: |
@@ -505,6 +532,7 @@ inputs:
       produce portable binaries. Set to an explicit value like
       "x86-64-v3" to require a higher ISA level. Check compiler docs
       for allowed values. If you choose wrong, build errors will occur.
+
   ### Debug features. ###
   debug:
     description: |
@@ -552,6 +580,7 @@ inputs:
       Attempt to use less memory, by forking less C compilation jobs and using
       options that use less memory. For use on embedded machines. Use this in
       case of out of memory problems. Defaults to off.
+
   ### Plugin options of 'automatic-updates' (categories: commercial, feature) ###
   auto-update-url-spec:
     description: |
@@ -562,6 +591,7 @@ inputs:
   auto-update-toml-file:
     description: |
       Path to generate a TOML update config for the compiled binary. Default empty, i.e. do not generate.
+
   ### Plugin options of 'windows-service' (categories: commercial, feature) ###
   windows-service-name:
     description: |
@@ -581,6 +611,7 @@ inputs:
     description: |
       Should the program allow to be ran from the command line. By default
       it does not and only outputs a message it is disallowed.
+
   ### Plugin options of 'esigner' (categories: commercial, integration, signing) ###
   esigner-sign-deep:
     description: |
@@ -605,6 +636,7 @@ inputs:
   esigner-totp-secret:
     description: |
       TOTP secret for the signing account (static secret).
+
   ### Plugin options of 'signtool' (categories: commercial, integration, signing) ###
   windows-sign-deep:
     description: |
@@ -635,11 +667,13 @@ inputs:
   windows-signed-content-comment:
     description: |
       Comment to be used for the signed comments. Optional, defaults to not given.
+
   ### Plugin options of 'anti-debugger' (categories: commercial, protection) ###
   anti-debugger-debugging:
     description: |
       Enables debug outputs for the debugger plugin, so that it e.g. says
       why it rejects something.
+
   ### Plugin options of 'codemeter' (categories: commercial, protection) ###
   codemeter-path:
     description: |
@@ -657,10 +691,12 @@ inputs:
   codemeter-keep-unprotected:
     description: |
       Keep the unprotected version of the Nuitka compiled binary.
+
   ### Plugin options of 'data-hiding' (categories: commercial, protection) ###
   data-hiding-salt-value:
     description: |
       Salt value to make encryption result unique.
+
   ### Plugin options of 'datafile-inclusion-ng' (categories: commercial, protection) ###
   embed-data-files-compile-time-pattern:
     description: |
@@ -677,11 +713,13 @@ inputs:
   embed-debug-qt-resources:
     description: |
       For debugging purposes, print out information for Qt resources not found.
+
   ### Plugin options of 'dll-embedding' (categories: commercial, protection) ###
   embed-dll-pattern:
     description: |
       Pattern of DLLs to embed (glob style). Matches against the destination path
       (e.g. package/ext.pyd or library.dll).
+
   ### Plugin options of 'traceback-encryption' (categories: commercial, protection) ###
   encryption-key:
     description: |
@@ -710,6 +748,7 @@ inputs:
       Shell pattern of module names to treat as private hard imports. Matching
       modules are compiled as dynamic hard imports and hidden from sys.modules.
       Can be given multiple times.
+
   ### Plugin options of 'source-inclusion' (categories: feature, package-support) ###
   source-inclusion-args:
     description: |
@@ -722,6 +761,7 @@ inputs:
   show-source-inclusion-trace:
     description: |
       Display the recorded source inclusion modules from the probe run.
+
   ### Plugin options of 'upx' (categories: integration) ###
   upx-binary:
     description: |
@@ -729,6 +769,7 @@ inputs:
   upx-disable-cache:
     description: |
       Do not cache UPX compression result, by default DLLs are cached, exe files are not.
+
   ### Plugin options of 'dill-compat' (categories: package-support) ###
   include-pickle-support-module:
     description: |
@@ -737,6 +778,7 @@ inputs:
       want to limit yourself to not create unnecessary run-time usages. For
       standalone mode, you can leave it at the default, at it will detect
       the usage.
+
   ### Plugin options of 'pmw-freezer' (categories: package-support) ###
   include-pmw-blt:
     description: |
@@ -744,6 +786,7 @@ inputs:
   include-pmw-color:
     description: |
       Should 'Pmw.Color' not be included, Default is to include it.
+
   ### Plugin options of 'tk-inter' (categories: package-support) ###
   tk-library-dir:
     description: |
@@ -752,6 +795,7 @@ inputs:
   tcl-library-dir:
     description: |
       The Tcl library dir. See comments for Tk library dir.
+
   ### Plugin options of 'torch-hub' (categories: package-support) ###
   torch-hub-model:
     description: |
@@ -759,6 +803,7 @@ inputs:
       'REPO_OR_DIR=MODEL', e.g. 'ultralytics/yolov5=yolov5s'. The repository part
       may also be a local directory containing a 'hubconf.py'. Repeat this option
       for multiple models. [REQUIRED]
+
   ### Plugin options of 'pyside6' (same for 'pyside2', 'pyqt6', 'pyqt5' plugins) (categories: package-support, qt-binding) ###
   include-qt-plugins:
     description: |
@@ -780,13 +825,18 @@ inputs:
       Sets the "QT_DEBUG_PLUGINS" environment variable to "1" in the
       created standalone, so you can debug what plugin loading issues
       there might be.
+
+
   ### Action controls ###
   disable-cache:
     description: "Disables caching of compiled binaries. Defaults to false."
+
   caching-key:
     description: "An optional string to make the Nuitka build cache key more specific. This can be used for manual cache invalidation or to segment caches based on custom criteria. This key itself is not passed to Nuitka."
     required: false
     default: "caching"
+
+
 runs:
   using: "composite"
   steps:
@@ -814,25 +864,25 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
       run: |
         safe_action_path=$(printf '%s' "$ACTION_PATH" | tr -d '\n\r')
-        echo "NUITKA_CACHE_DIR=${safe_action_path}/nuitka/cache" >> $GITHUB_ENV
-        echo "PYTHON_VERSION=$(python --version | awk '{print $2}' | cut -d '.' -f 1,2)" >> $GITHUB_ENV
+        echo "NUITKA_CACHE_DIR=${safe_action_path}/nuitka/cache" >> "$GITHUB_ENV"
+        echo "PYTHON_VERSION=$(python --version | awk '{print $2}' | cut -d '.' -f 1,2)" >> "$GITHUB_ENV"
     - name: Install Dependencies
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
-        ACCESS_TOKEN: ${{ inputs.access-token }}
-        NUITKA_VERSION: ${{ inputs.nuitka-version }}
+        INPUT_ACCESS_TOKEN: ${{ inputs.access-token }}
+        INPUT_NUITKA_VERSION: ${{ inputs.nuitka-version }}
       run: |
-        pip install -r "$ACTION_PATH/requirements.txt"
+        pip install -r "${ACTION_PATH}/requirements.txt"
 
         # With commercial access token, use that repository.
-        if [ "$ACCESS_TOKEN" != "" ]; then
-          repo_url="git+https://$ACCESS_TOKEN@github.com/Nuitka/Nuitka-commercial.git"
+        if [ "${INPUT_ACCESS_TOKEN}" != "" ]; then
+          repo_url="git+https://${INPUT_ACCESS_TOKEN}@github.com/Nuitka/Nuitka-commercial.git"
         else
           repo_url="git+https://$@github.com/Nuitka/Nuitka.git"
         fi
 
-        pip install "${repo_url}/@$NUITKA_VERSION#egg=nuitka"
+        pip install "${repo_url}/@${INPUT_NUITKA_VERSION}#egg=nuitka"
     - name: Install ccache
       # TODO: Proper "in" test could make sense here.
       if: ${{ inputs.disable-cache != 'ccache' && runner.os == 'Linux' }}
@@ -848,16 +898,17 @@ runs:
         restore-keys: |
           nuitka-${{ inputs.caching-key }}-${{ runner.os }}-${{ runner.arch }}-python-${{ env.PYTHON_VERSION }}-
           nuitka-${{ inputs.caching-key }}-${{ runner.os }}-${{ runner.arch }}-
+
     - name: Build with Nuitka
       shell: bash
       env:
         PYTHONUTF8: 1
-        NUITKA_WORKFLOW_INPUTS_JSON: ${{ toJson(inputs) }}
+        INPUTS_JSON: ${{ toJson(inputs) }}
       run: |
         set -e
 
         # Prepare the JSON string for Nuitka, filtering out action-specific keys using Python
-        NUITKA_WORKFLOW_INPUTS=$(printf '%s' "$NUITKA_WORKFLOW_INPUTS_JSON" | python -c "import sys, json; data = json.load(sys.stdin); [data.pop(k, None) for k in ['nuitka-version', 'working-directory', 'access-token', 'disable-cache', 'caching-key']]; json.dump(data, sys.stdout, ensure_ascii=False)")
+        NUITKA_WORKFLOW_INPUTS=$(printf '%s\n' "$INPUTS_JSON" | python -c "import sys, json; data = json.load(sys.stdin); [data.pop(k, None) for k in ['nuitka-version', 'working-directory', 'access-token', 'disable-cache', 'caching-key']]; json.dump(data, sys.stdout, ensure_ascii=False)")
 
         # Pass the filtered JSON to Nuitka via an environment variable
         export NUITKA_WORKFLOW_INPUTS
